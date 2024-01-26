@@ -5,12 +5,12 @@ import (
 )
 
 type Resolver struct {
-	Upstream []string
+	Upstreams []string
 }
 
 func New() *Resolver {
 	return &Resolver{
-		Upstream: []string{""},
+		Upstreams: []string{""},
 	}
 }
 
