@@ -1,17 +1,17 @@
 package resolver
 
 import (
-	"net"
-
 	"github.com/miekg/dns"
 )
 
 type Resolver struct {
-	// a cache or specific configuration
+	Upstream []string
 }
 
 func New() *Resolver {
-	return &Resolver{}
+	return &Resolver{
+		Upstream: []string{""},
+	}
 }
 
 func (r *Resolver) Resolve(req dns.Msg) (dns.Msg, error) {
@@ -34,21 +34,27 @@ func (r *Resolver) Resolve(req dns.Msg) (dns.Msg, error) {
 }
 
 func (r *Resolver) resolveA(req dns.Msg) (dns.Msg, error) {
-	var resp dns.Msg
-	resp.SetReply(&req)
-	resp.Authoritative = true
-	resp.Answer = []dns.RR{
-		&dns.A{
-			Hdr: dns.RR_Header{
-				Name:   req.Question[0].Name,
-				Rrtype: dns.TypeA,
-				Class:  dns.ClassINET,
-				Ttl:    60,
-			},
-			A: net.IPv4(1, 0, 0, 1),
-		},
+
+	c := new(dns.Client)
+
+	// Set up a message to query the external DNS server
+	m := new(dns.Msg)
+	m.SetQuestion(req.Question[0].Name, dns.TypeA)
+
+	// Perform the query
+	resp, _, err := c.Exchange(m, "8.8.8.8:53")
+	if err != nil {
+		// Handle error
+		return dns.Msg{}, err
 	}
-	return resp, nil
+
+	// Construct the response to the original query
+	var response dns.Msg
+	response.SetReply(&req)
+	response.Authoritative = false // Set false since it's not authoritative
+	response.Answer = resp.Answer
+
+	return response, nil
 }
 
 func (r *Resolver) resolveAAAA(req dns.Msg) (dns.Msg, error) {
@@ -69,4 +75,11 @@ func (r *Resolver) resolveNS(req dns.Msg) (dns.Msg, error) {
 
 func (r *Resolver) resolveTXT(req dns.Msg) (dns.Msg, error) {
 	return dns.Msg{}, nil
+}
+
+func (r *Resolver) createResponse(req dns.Msg, record dns.RR) dns.Msg {
+	resp := dns.Msg{}
+	resp.SetReply(&req)
+	resp.Answer = append(resp.Answer, record)
+	return resp
 }

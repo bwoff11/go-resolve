@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -15,14 +16,19 @@ type Listener struct {
 	Resolver *resolver.Resolver
 	Protocol models.Protocol
 	Port     int
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 func New(resolver *resolver.Resolver, protocol models.Protocol, port int) *Listener {
+	ctx, cancel := context.WithCancel(context.Background())
 	log.Printf("Creating listener on port %d for protocol %s\n", port, protocol)
 	return &Listener{
 		Resolver: resolver,
 		Protocol: protocol,
 		Port:     port,
+		ctx:      ctx,
+		cancel:   cancel,
 	}
 }
 
@@ -38,65 +44,14 @@ func (l *Listener) Listen() error {
 	}
 }
 
-func (l *Listener) listenTCP(addr string) error {
-	ln, err := net.Listen("tcp", ":8080")
-	if err != nil {
-		// handle error
-	}
-	for {
-		_, err := ln.Accept()
-		if err != nil {
-			// handle error
-		}
-	}
+func (l *Listener) Close() {
+	l.cancel()
 }
 
-func (l *Listener) listenUDP(addr string) error {
-	ln, err := net.ListenPacket("udp", addr)
+func (l *Listener) handleDNSQuery(req dns.Msg) ([]byte, error) {
+	resp, err := l.Resolver.Resolve(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	log.Printf("Listening on %s\n", addr)
-	for {
-		buf := make([]byte, 512)
-		n, addr, err := ln.ReadFrom(buf)
-		if err != nil {
-			return err
-		}
-
-		log.Printf("Received %d bytes from %s\n", n, addr)
-		log.Printf("Data: %s\n", buf[:n])
-
-		// Packaged the received data into a DNS message...
-		var req dns.Msg
-		err = req.Unpack(buf[:n])
-		if err != nil {
-			log.Printf("Error unpacking DNS query: %v\n", err)
-			continue
-		}
-
-		// Resolve the DNS query...
-		msg, err := l.Resolver.Resolve(req)
-		if err != nil {
-			log.Printf("Error resolving DNS query: %v\n", err)
-			continue
-		}
-
-		// Convert the response to a byte slice...
-		resp, err := msg.Pack()
-		if err != nil {
-			log.Printf("Error packing DNS response: %v\n", err)
-			continue
-		}
-
-		// Send the response...
-		_, err = ln.WriteTo(resp, addr)
-		if err != nil {
-			log.Printf("Error sending DNS response: %v\n", err)
-			continue
-		}
-
-		log.Printf("Sent %d bytes to %s\n", len(resp), addr)
-	}
+	return resp.Pack()
 }
