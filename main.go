@@ -9,24 +9,48 @@ import (
 )
 
 func main() {
-	config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
 
 	res := resolver.New()
 
-	tcpListener := listener.New(res, "tcp", 1053)
-	udpListener := listener.New(res, "udp", 1053)
+	startListeners(res, cfg)
+	// startDNSOverTLS(cfg)
+	// startWebServer(cfg)
+	// startMetricsEndpoint(cfg)
+	// ...
 
-	go func() {
-		if err := tcpListener.Listen(); err != nil {
-			log.Fatalf("TCP Listener failed: %v", err)
-		}
-	}()
+	select {} // Keep the main goroutine running
+}
 
+func startListeners(res *resolver.Resolver, cfg *config.Config) {
+	if cfg.DNS.UDP.Enabled {
+		startUDPListener(res, cfg.DNS.UDP.Port)
+	}
+
+	if cfg.DNS.TCP.Enabled {
+		startTCPListener(res, cfg.DNS.TCP.Port)
+	}
+}
+
+func startUDPListener(res *resolver.Resolver, port int) {
+	udpListener := listener.New(res, "udp", port)
 	go func() {
 		if err := udpListener.Listen(); err != nil {
 			log.Fatalf("UDP Listener failed: %v", err)
 		}
 	}()
-
-	select {}
 }
+
+func startTCPListener(res *resolver.Resolver, port int) {
+	tcpListener := listener.New(res, "tcp", port)
+	go func() {
+		if err := tcpListener.Listen(); err != nil {
+			log.Fatalf("TCP Listener failed: %v", err)
+		}
+	}()
+}
+
+// Define other start functions for DNSOverTLS, WebServer, MetricsEndpoint, etc.
