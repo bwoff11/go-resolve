@@ -9,9 +9,8 @@ import (
 )
 
 type Resolver struct {
-	Upstreams []string
-	Cache     *cache.Cache
-	// Add a map to associate DNS record types with their respective resolve functions
+	Upstreams    []string
+	Cache        *cache.Cache
 	resolveFuncs map[uint16]func(dns.Msg) (dns.Msg, error)
 }
 

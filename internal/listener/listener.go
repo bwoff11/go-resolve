@@ -7,20 +7,19 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/bwoff11/go-resolve/internal/models"
 	"github.com/bwoff11/go-resolve/internal/resolver"
 	"github.com/miekg/dns"
 )
 
 type Listener struct {
 	Resolver *resolver.Resolver
-	Protocol models.Protocol
+	Protocol string
 	Port     int
 	ctx      context.Context
 	cancel   context.CancelFunc
 }
 
-func New(resolver *resolver.Resolver, protocol models.Protocol, port int) *Listener {
+func New(resolver *resolver.Resolver, protocol string, port int) *Listener {
 	ctx, cancel := context.WithCancel(context.Background())
 	log.Printf("Creating listener on port %d for protocol %s\n", port, protocol)
 	return &Listener{
@@ -35,9 +34,9 @@ func New(resolver *resolver.Resolver, protocol models.Protocol, port int) *Liste
 func (l *Listener) Listen() error {
 	addr := net.JoinHostPort("", strconv.Itoa(l.Port))
 	switch l.Protocol {
-	case models.TCP:
+	case "tcp":
 		return l.listenTCP(addr)
-	case models.UDP:
+	case "udp":
 		return l.listenUDP(addr)
 	default:
 		return fmt.Errorf("unknown protocol: %s", l.Protocol)
