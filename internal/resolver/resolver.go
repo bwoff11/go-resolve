@@ -1,25 +1,26 @@
 package resolver
 
 import (
-	"github.com/bwoff11/go-resolve/internal/cache"
+	"database/sql"
+	"log"
+
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/upstream"
 	"github.com/miekg/dns"
 )
 
 type Resolver struct {
-	Upstreams     []upstream.Upstream
-	Strategy      config.LoadBalancingStrategy
-	LocalCache    *cache.LocalCache
-	UpstreamCache *cache.UpstreamCache
+	Upstreams []upstream.Upstream
+	Strategy  config.LoadBalancingStrategy
+	Cache     *sql.DB
 }
 
 func New(
 	hosts []string,
 	strategy config.LoadBalancingStrategy,
-	localCache *cache.LocalCache,
-	upstreamCache *cache.UpstreamCache,
 ) *Resolver {
+
+	log.Printf("Creating resolver with strategy: %s\n", strategy)
 
 	// Create upstreams from host list
 	var upstreams []upstream.Upstream
@@ -34,6 +35,9 @@ func New(
 }
 
 func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
+
+	// check cache here
+
 	upstream := r.selectUpstream()
 	resp, err := upstream.Query(req)
 	if err != nil {

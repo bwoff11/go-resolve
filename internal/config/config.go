@@ -9,88 +9,86 @@ import (
 )
 
 type ProtocolType string
+type LoadBalancingStrategy string
 
 const (
 	ProtocolTypeDOT ProtocolType = "dot"
 	ProtocolTypeUDP ProtocolType = "udp"
 	ProtocolTypeTCP ProtocolType = "tcp"
-)
 
-type LoadBalancingStrategy string
-
-const (
 	LoadBalancingStrategyRandom     LoadBalancingStrategy = "random"
 	LoadBalancingStrategyRoundRobin LoadBalancingStrategy = "roundRobin"
 	LoadBalancingStrategyLatency    LoadBalancingStrategy = "latency"
 )
 
 type Config struct {
-	Web     WebConfig
-	Logging LoggingConfig
-	DNS     DNSConfig
+	Web     WebConfig     `mapstructure:"web"`
+	Logging LoggingConfig `mapstructure:"logging"`
+	DNS     DNSConfig     `mapstructure:"dns"`
 }
 
 type WebConfig struct {
-	Enabled bool
-	Port    int
-	TLS     TLSConfig
+	Enabled bool      `mapstructure:"enabled"`
+	Port    int       `mapstructure:"port"`
+	TLS     TLSConfig `mapstructure:"tls"`
 }
 
 type TLSConfig struct {
-	Enabled  bool
-	CertFile string
-	KeyFile  string
+	Enabled  bool   `mapstructure:"enabled"`
+	CertFile string `mapstructure:"certFile"`
+	KeyFile  string `mapstructure:"keyFile"`
 }
 
 type LoggingConfig struct {
-	Level    string
-	Output   string
-	FilePath string
+	Level    string `mapstructure:"level"`
+	Output   string `mapstructure:"output"`
+	FilePath string `mapstructure:"filePath"`
 }
 
 type DNSConfig struct {
-	TTL            int
-	MaxMessageSize int
-	Cache          CacheConfig
-	Upstream       UpstreamConfig
-	Protocols      ProtocolConfigs
-	LocalDNSConfig LocalDNSConfig
+	TTL            int             `mapstructure:"ttl"`
+	MaxMessageSize int             `mapstructure:"maxMessageSize"`
+	Cache          CacheConfig     `mapstructure:"cache"`
+	Upstream       UpstreamConfig  `mapstructure:"upstream"`
+	Protocols      ProtocolConfigs `mapstructure:"protocols"`
+	LocalDNSConfig LocalDNSConfig  `mapstructure:"local"`
 }
 
 type LocalDNSConfig struct {
-	Enabled bool
-	Records DNSRecords
+	Enabled bool        `mapstructure:"enabled"`
+	Records []DNSRecord `mapstructure:"records"`
 }
 
-type DNSRecords struct {
-	A     map[string]string
-	AAAA  map[string]string
-	CNAME map[string]string
+type DNSRecord struct {
+	Type    string `mapstructure:"type"`
+	Domain  string `mapstructure:"domain"`
+	Address string `mapstructure:"address,omitempty"`
+	Target  string `mapstructure:"target,omitempty"`
 }
 
 type CacheConfig struct {
-	Enabled       bool
-	Size          int
-	TTL           time.Duration
-	PurgeInterval time.Duration
+	Enabled       bool          `mapstructure:"enabled"`
+	Size          int           `mapstructure:"size"`
+	TTL           time.Duration `mapstructure:"ttl"`
+	PurgeInterval time.Duration `mapstructure:"purgeInterval"`
 }
 
 type UpstreamConfig struct {
-	Enabled  bool
-	Timeout  time.Duration
-	Strategy LoadBalancingStrategy
-	Servers  []string
+	Enabled  bool                  `mapstructure:"enabled"`
+	Timeout  time.Duration         `mapstructure:"timeout"`
+	Strategy LoadBalancingStrategy `mapstructure:"strategy"`
+	Servers  []string              `mapstructure:"servers"`
 }
 
 type ProtocolConfigs struct {
-	UDP ProtocolConfig
-	TCP ProtocolConfig
-	DOT ProtocolConfig
+	UDP ProtocolConfig `mapstructure:"udp"`
+	TCP ProtocolConfig `mapstructure:"tcp"`
+	DOT ProtocolConfig `mapstructure:"dot"`
 }
 
 type ProtocolConfig struct {
-	Enabled     bool
-	Port        int
+	Enabled     bool   `mapstructure:"enabled"`
+	Port        int    `mapstructure:"port"`
 	TLSCertFile string `mapstructure:"tlsCertFile,omitempty"`
 	TLSKeyFile  string `mapstructure:"tlsKeyFile,omitempty"`
 	StrictSNI   bool   `mapstructure:"strictSNI,omitempty"`

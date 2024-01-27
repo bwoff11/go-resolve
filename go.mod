@@ -3,6 +3,7 @@ module github.com/bwoff11/go-resolve
 go 1.21.1
 
 require (
+	github.com/mattn/go-sqlite3 v1.14.20
 	github.com/miekg/dns v1.1.58
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/spf13/viper v1.18.2
