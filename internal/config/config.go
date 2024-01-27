@@ -21,6 +21,7 @@ type LoadBalancingStrategy string
 const (
 	LoadBalancingStrategyRandom     LoadBalancingStrategy = "random"
 	LoadBalancingStrategyRoundRobin LoadBalancingStrategy = "roundRobin"
+	LoadBalancingStrategyLatency    LoadBalancingStrategy = "latency"
 )
 
 type Config struct {
@@ -75,9 +76,10 @@ type CacheConfig struct {
 }
 
 type UpstreamConfig struct {
-	Timeout               time.Duration
-	LoadBalancingStrategy LoadBalancingStrategy
-	Servers               []string
+	Enabled  bool
+	Timeout  time.Duration
+	Strategy LoadBalancingStrategy
+	Servers  []string
 }
 
 type ProtocolConfigs struct {

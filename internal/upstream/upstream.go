@@ -18,7 +18,15 @@ type Upstream struct {
 }
 
 // New creates a new Upstream object with the specified IP address.
-func New(ip net.IP) *Upstream {
+func New(host string) *Upstream {
+
+	// Parse IP address
+	ip := net.ParseIP(host)
+	if ip == nil {
+		panic(fmt.Sprintf("Invalid IP address: %s", host))
+	}
+
+	// Return new Upstream
 	return &Upstream{
 		IP: ip,
 	}

@@ -1,37 +1,35 @@
 package resolver
 
 import (
-	"fmt"
-	"net"
-
+	"github.com/bwoff11/go-resolve/internal/cache"
+	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/upstream"
 	"github.com/miekg/dns"
 )
 
 type Resolver struct {
-	Upstreams []upstream.Upstream
+	Upstreams     []upstream.Upstream
+	Strategy      config.LoadBalancingStrategy
+	LocalCache    *cache.LocalCache
+	UpstreamCache *cache.UpstreamCache
 }
 
-func New(hosts []string) *Resolver {
+func New(
+	hosts []string,
+	strategy config.LoadBalancingStrategy,
+	localCache *cache.LocalCache,
+	upstreamCache *cache.UpstreamCache,
+) *Resolver {
 
-	// Parse upstreams as IP addresses
-	var ips []net.IP
-	for _, host := range hosts {
-		ip := net.ParseIP(host)
-		if ip == nil {
-			panic(fmt.Sprintf("Invalid IP address: %s", host))
-		}
-		ips = append(ips, ip)
-	}
-
-	// Convert ip addresses to upstreams
+	// Create upstreams from host list
 	var upstreams []upstream.Upstream
-	for _, ip := range ips {
-		upstreams = append(upstreams, *upstream.New(ip))
+	for _, host := range hosts {
+		upstreams = append(upstreams, *upstream.New(host))
 	}
 
 	return &Resolver{
 		Upstreams: upstreams,
+		Strategy:  strategy,
 	}
 }
 

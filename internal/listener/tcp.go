@@ -13,10 +13,7 @@ import (
 )
 
 // CreateTCPListener starts a TCP DNS listener on the specified port.
-func CreateTCPListener(config *config.Config) {
-
-	// Create resolver
-	resolver := resolver.New(config.DNS.Upstream.Servers)
+func CreateTCPListener(config *config.Config, resolver *resolver.Resolver) {
 
 	// Create TCP listener
 	addr := net.JoinHostPort("", strconv.Itoa(config.DNS.Protocols.TCP.Port))
