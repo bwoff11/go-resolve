@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"database/sql"
 	"log"
 	"os"
 
@@ -116,7 +115,57 @@ func (c *Cache) Query(domain string, recordType uint16) (*models.Record, error) 
 	return &record, nil
 }
 
-func AddLocalRecord(db *sql.DB, name string, recordType string, value string) error {
-	// Implement the logic to insert a record into the domains table.
+func (c *Cache) Add(msg *dns.Msg) error {
+	for _, answer := range msg.Answer {
+		var recordType uint16
+		var value string
+
+		switch rr := answer.(type) {
+		case *dns.A:
+			recordType = dns.TypeA
+			value = rr.A.String()
+		case *dns.AAAA:
+			recordType = dns.TypeAAAA
+			value = rr.AAAA.String()
+		case *dns.CNAME:
+			recordType = dns.TypeCNAME
+			value = rr.Target
+		default:
+			// Handle other record types if necessary
+			continue
+		}
+
+		domainName := dns.Fqdn(answer.Header().Name)
+		ttl := int(answer.Header().Ttl)
+
+		// Add record to the cache
+		if err := c.addRecord(domainName, recordType, value, ttl); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Cache) addRecord(domainName string, recordType uint16, value string, ttl int) error {
+	var domain models.Domain
+	// Find or create the domain
+	if err := c.db.Where("full_domain = ?", domainName).FirstOrCreate(&domain, models.Domain{FullDomain: domainName}).Error; err != nil {
+		return err
+	}
+
+	// Create the record
+	record := models.Record{
+		DomainID: domain.ID,
+		Type:     recordType,
+		Value:    value,
+		TTL:      ttl,
+	}
+
+	// Add the record to the database
+	if dbResult := c.db.Create(&record); dbResult.Error != nil {
+		return dbResult.Error
+	}
+
 	return nil
 }

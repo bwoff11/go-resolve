@@ -65,6 +65,11 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 	// Set the response ID to match the request ID
 	resp.Id = req.Id
 
+	// Cache the response
+	if r.Cache != nil {
+		r.Cache.Add(resp)
+	}
+
 	return resp, nil
 }
 
