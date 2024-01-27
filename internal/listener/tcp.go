@@ -5,87 +5,96 @@ import (
 	"io"
 	"log"
 	"net"
+	"strconv"
 
+	"github.com/bwoff11/go-resolve/internal/config"
+	"github.com/bwoff11/go-resolve/internal/resolver"
 	"github.com/miekg/dns"
 )
 
-// listenTCP starts a TCP listener on the specified address. It handles incoming DNS queries over TCP.
-func (l *Listener) listenTCP(addr string) error {
+// CreateTCPListener starts a TCP DNS listener on the specified port.
+func CreateTCPListener(
+	protoConfig config.ProtocolConfig,
+	cacheConfig config.CacheConfig,
+	upstreamConfig config.UpstreamConfig,
+) {
+
+	// Create resolver
+	res := resolver.New(
+		upstreamConfig.Servers,
+		cacheConfig.TTL,
+		cacheConfig.PurgeInterval,
+	)
+
+	// Create TCP listener
+	addr := net.JoinHostPort("", strconv.Itoa(protoConfig.Port))
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		return err
+		log.Fatalf("Failed to start TCP listener on %s: %v", addr, err)
 	}
 	defer listener.Close()
 
 	log.Printf("TCP listener started on %s", addr)
 
+	// Accept connections
 	for {
-		select {
-		case <-l.ctx.Done():
-			// If a shutdown signal is received, stop the listener
-			return nil
-		default:
-			// Accept a new connection
-			conn, err := listener.Accept()
-			if err != nil {
-				log.Printf("Error accepting TCP connection: %v", err)
-				continue
-			}
-			// Handle the connection in a separate goroutine
-			go l.handleTCPConnection(conn)
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("Error accepting TCP connection: %v", err)
+			continue
 		}
+		go handleTCPConnection(conn, res)
 	}
 }
 
-// handleTCPConnection handles an individual TCP connection.
-func (l *Listener) handleTCPConnection(conn net.Conn) {
+func handleTCPConnection(conn net.Conn, res *resolver.Resolver) {
 	defer conn.Close()
-
-	// Process the connection to read and respond to the DNS query
-	if err := l.processTCPConnection(conn); err != nil {
-		log.Printf("Error processing TCP connection: %v", err)
-	}
+	processTCPConnection(conn, res)
 }
 
-// processTCPConnection reads a DNS query from the TCP connection, processes it, and sends back the response.
-func (l *Listener) processTCPConnection(conn net.Conn) error {
-	// Read the first 2 bytes to determine the length of the DNS query
+func processTCPConnection(conn net.Conn, res *resolver.Resolver) {
 	lenBuf := make([]byte, 2)
 	if _, err := io.ReadFull(conn, lenBuf); err != nil {
-		return err
+		log.Printf("Error reading length: %v", err)
+		return
 	}
 	length := binary.BigEndian.Uint16(lenBuf)
 
-	// Read the DNS query based on the obtained length
 	msgBuf := make([]byte, length)
 	if _, err := io.ReadFull(conn, msgBuf); err != nil {
-		return err
+		log.Printf("Error reading message: %v", err)
+		return
 	}
 
-	// Unpack the query into a dns.Msg struct
 	var req dns.Msg
 	if err := req.Unpack(msgBuf); err != nil {
-		return err
+		log.Printf("Error unpacking DNS query: %v", err)
+		return
 	}
 
-	// Handle the DNS query and get the response
-	resp, err := l.handleDNSQuery(req)
+	resp, err := res.Resolve(req)
 	if err != nil {
-		return err
+		log.Printf("Error resolving DNS query: %v", err)
+		return
 	}
 
-	// Send the response back to the client
-	return l.sendTCPResponse(conn, resp)
+	sendTCPResponse(conn, resp)
 }
 
-// sendTCPResponse sends a DNS response back to the client over TCP.
-func (l *Listener) sendTCPResponse(conn net.Conn, resp []byte) error {
-	// The first 2 bytes contain the length of the response
-	lenBuf := []byte{byte(len(resp) >> 8), byte(len(resp))}
-	if _, err := conn.Write(lenBuf); err != nil {
-		return err
+func sendTCPResponse(conn net.Conn, resp dns.Msg) {
+	respBytes, err := resp.Pack()
+	if err != nil {
+		log.Printf("Error packing DNS response: %v", err)
+		return
 	}
-	// Write the actual DNS response
-	_, err := conn.Write(resp)
-	return err
+
+	lenBuf := []byte{byte(len(respBytes) >> 8), byte(len(respBytes))}
+	if _, err := conn.Write(lenBuf); err != nil {
+		log.Printf("Error sending length: %v", err)
+		return
+	}
+
+	if _, err := conn.Write(respBytes); err != nil {
+		log.Printf("Error sending response: %v", err)
+	}
 }

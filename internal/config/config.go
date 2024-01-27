@@ -53,6 +53,18 @@ type DNSConfig struct {
 	Cache          CacheConfig
 	Upstream       UpstreamConfig
 	Protocols      ProtocolConfigs
+	LocalDNSConfig LocalDNSConfig
+}
+
+type LocalDNSConfig struct {
+	Enabled bool
+	Records DNSRecords
+}
+
+type DNSRecords struct {
+	A     map[string]string
+	AAAA  map[string]string
+	CNAME map[string]string
 }
 
 type CacheConfig struct {

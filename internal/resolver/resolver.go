@@ -2,85 +2,66 @@ package resolver
 
 import (
 	"fmt"
-	"log"
-	"strings"
+	"time"
 
 	"github.com/miekg/dns"
 	"github.com/patrickmn/go-cache"
 )
 
 type Resolver struct {
-	Upstreams []string
-	Cache     *cache.Cache
+	Upstreams   []string
+	LocalCache  *cache.Cache
+	RemoteCache *cache.Cache
 }
 
-func New(upstreams []string, cache *cache.Cache) *Resolver {
+func New(upstreams []string, ttl time.Duration, purgeInterval time.Duration) *Resolver {
 	return &Resolver{
-		Upstreams: upstreams,
-		Cache:     cache,
+		Upstreams:   upstreams,
+		LocalCache:  cache.New(cache.NoExpiration, cache.NoExpiration),
+		RemoteCache: cache.New(ttl, purgeInterval),
 	}
 }
 
 func (r *Resolver) Resolve(req dns.Msg) (dns.Msg, error) {
-	cacheKey := r.generateCacheKey(req)
-	if response, found := r.getFromCache(cacheKey, req); found {
+	cacheKey := r.generateCacheKey(req.Question[0])
+
+	if response, found := r.checkCaches(cacheKey, req.Id); found {
 		return response, nil
 	}
 
+	// Query upstream
 	response, err := r.queryUpstream(req)
 	if err != nil {
 		return dns.Msg{}, err
 	}
 
-	r.Cache.Set(cacheKey, response, cache.DefaultExpiration)
+	// Add to remote cache and return
+	r.RemoteCache.Set(cacheKey, response, cache.DefaultExpiration)
 	return response, nil
 }
 
-func (r *Resolver) generateCacheKey(req dns.Msg) string {
-	return fmt.Sprintf("%s_%s", req.Question[0].Name, dns.TypeToString[req.Question[0].Qtype])
-}
-
-func (r *Resolver) getFromCache(key string, req dns.Msg) (dns.Msg, bool) {
-	if cachedResp, found := r.Cache.Get(key); found {
-		log.Printf("Cache hit for %s", key)
-		cachedMsg := cachedResp.(dns.Msg)
-		cachedMsg.Id = req.Id
-		return cachedMsg, true
+func (r *Resolver) checkCaches(key string, reqID uint16) (dns.Msg, bool) {
+	// Function to update response ID to match request ID
+	updateResponseID := func(resp dns.Msg) dns.Msg {
+		resp.Id = reqID
+		return resp
 	}
-	log.Printf("Cache miss for %s", key)
+
+	// Check local cache
+	if x, found := r.LocalCache.Get(key); found {
+		return updateResponseID(x.(dns.Msg)), true
+	}
+
+	// Check remote cache
+	if x, found := r.RemoteCache.Get(key); found {
+		return updateResponseID(x.(dns.Msg)), true
+	}
+
 	return dns.Msg{}, false
 }
 
-func (r *Resolver) queryUpstream(req dns.Msg) (dns.Msg, error) {
-	client := new(dns.Client)
-	msg := new(dns.Msg)
-	msg.SetQuestion(req.Question[0].Name, req.Question[0].Qtype)
-
-	upstream := r.chooseUpstream()
-	if upstream == "" {
-		return dns.Msg{}, fmt.Errorf("no upstream DNS servers configured")
-	}
-
-	// Ensure the upstream address includes a port number
-	if !strings.Contains(upstream, ":") {
-		upstream = fmt.Sprintf("%s:53", upstream) // Default DNS port is 53
-	}
-
-	resp, _, err := client.Exchange(msg, upstream)
-	if err != nil {
-		return dns.Msg{}, err
-	}
-
-	response := r.createResponse(req, resp.Answer)
-	return response, nil
-}
-
-func (r *Resolver) chooseUpstream() string {
-	// Implement load balancing or failover logic if needed
-	if len(r.Upstreams) > 0 {
-		return r.Upstreams[0] // Simple selection for now
-	}
-	return ""
+func (r *Resolver) generateCacheKey(q dns.Question) string {
+	return fmt.Sprintf("%s_%d", q.Name, q.Qtype)
 }
 
 func (r *Resolver) createResponse(req dns.Msg, answers []dns.RR) dns.Msg {
