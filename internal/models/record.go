@@ -2,17 +2,24 @@ package models
 
 import (
 	"net"
+	"time"
 
 	"github.com/miekg/dns"
-	"gorm.io/gorm"
 )
 
 type Record struct {
-	gorm.Model
-	DomainID uint
-	Type     uint16
-	Value    string
-	TTL      int
+	ID        uint
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	ExpiresAt time.Time
+	DomainID  uint
+	Type      uint16
+	Value     string
+	TTL       int
+}
+
+func (r *Record) IsExpired() bool {
+	return r.ExpiresAt.Before(time.Now())
 }
 
 func (r *Record) ToDNSMsg(id int) *dns.Msg {

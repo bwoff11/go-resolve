@@ -3,6 +3,7 @@ package cache
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/models"
@@ -104,15 +105,28 @@ func (c *Cache) Query(domain string, recordType uint16) (*models.Record, error) 
 	var record models.Record
 	var domainObj models.Domain
 
+	// Query for the domain object
 	if err := c.db.Where("full_domain = ?", domain).First(&domainObj).Error; err != nil {
 		return nil, err
 	}
 
+	// Query for the record
 	if err := c.db.Where("domain_id = ? AND type = ?", domainObj.ID, recordType).First(&record).Error; err != nil {
-		return nil, err
+		return nil, err // Record not found or error occurred
 	}
 
-	return &record, nil
+	// Check if the record is expired
+	if time.Now().After(record.ExpiresAt) {
+		log.Printf("Record for %s is expired\n", domain)
+		// Delete the expired record using its primary key
+		if err := c.db.Delete(&models.Record{}, record.ID).Error; err != nil {
+			log.Printf("Error deleting expired record: %v\n", err)
+			return nil, err
+		}
+		return nil, nil // Record is expired and deleted
+	}
+
+	return &record, nil // Record is valid and not expired
 }
 
 func (c *Cache) Add(msg *dns.Msg) error {
@@ -156,10 +170,11 @@ func (c *Cache) addRecord(domainName string, recordType uint16, value string, tt
 
 	// Create the record
 	record := models.Record{
-		DomainID: domain.ID,
-		Type:     recordType,
-		Value:    value,
-		TTL:      ttl,
+		DomainID:  domain.ID,
+		Type:      recordType,
+		Value:     value,
+		TTL:       ttl,
+		ExpiresAt: time.Now().Add(time.Duration(ttl) * time.Second),
 	}
 
 	// Add the record to the database
