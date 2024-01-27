@@ -11,26 +11,16 @@ import (
 )
 
 const (
-	// bufSize defines the size of the buffer used to read incoming UDP packets.
-	bufSize = 1024 // Adjust this size based on expected query sizes
+	bufSize = 1024 // Size of the buffer to read UDP packets
 )
 
 // CreateUDPListener starts a UDP DNS listener on the specified port.
-func CreateUDPListener(
-	protoConfig config.ProtocolConfig,
-	cacheConfig config.CacheConfig,
-	upstreamConfig config.UpstreamConfig,
-) {
+func CreateUDPListener(config *config.Config) {
 
 	// Create resolver
-	res := resolver.New(
-		upstreamConfig.Servers,
-		cacheConfig.TTL,
-		cacheConfig.PurgeInterval,
-	)
+	resolver := resolver.New(config.DNS.Upstream.Servers)
 
-	// Create UDP listener
-	addr := net.JoinHostPort("", strconv.Itoa(protoConfig.Port))
+	addr := net.JoinHostPort("", strconv.Itoa(config.DNS.Protocols.UDP.Port))
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
 		log.Fatalf("Failed to start UDP listener on %s: %v", addr, err)
@@ -38,10 +28,13 @@ func CreateUDPListener(
 	defer conn.Close()
 
 	log.Printf("UDP listener started on %s", addr)
+	handleUDPConnections(conn, resolver)
+}
 
+// handleUDPConnections listens for incoming UDP packets and processes them.
+func handleUDPConnections(conn net.PacketConn, res *resolver.Resolver) {
 	buf := make([]byte, bufSize)
 
-	// Accept connections
 	for {
 		n, clientAddr, err := conn.ReadFrom(buf)
 		if err != nil {
@@ -49,26 +42,31 @@ func CreateUDPListener(
 			continue
 		}
 
-		var req dns.Msg
-		if err := req.Unpack(buf[:n]); err != nil {
-			log.Printf("Error unpacking DNS query: %v", err)
-			continue
-		}
+		go processUDPQuery(buf[:n], conn, clientAddr, res)
+	}
+}
 
-		resp, err := res.Resolve(req)
-		if err != nil {
-			log.Printf("Error resolving DNS query: %v", err)
-			continue
-		}
+// processUDPQuery processes a single UDP query and sends back a response.
+func processUDPQuery(query []byte, conn net.PacketConn, addr net.Addr, res *resolver.Resolver) {
+	var req dns.Msg
+	if err := req.Unpack(query); err != nil {
+		log.Printf("Error unpacking DNS query: %v", err)
+		return
+	}
 
-		respBytes, err := resp.Pack()
-		if err != nil {
-			log.Printf("Error packing DNS response: %v", err)
-			continue
-		}
+	resp, err := res.Resolve(&req)
+	if err != nil {
+		log.Printf("Error resolving DNS query: %v", err)
+		return
+	}
 
-		if _, err := conn.WriteTo(respBytes, clientAddr); err != nil {
-			log.Printf("Error sending DNS response: %v", err)
-		}
+	respBytes, err := resp.Pack()
+	if err != nil {
+		log.Printf("Error packing DNS response: %v", err)
+		return
+	}
+
+	if _, err := conn.WriteTo(respBytes, addr); err != nil {
+		log.Printf("Error sending DNS response: %v", err)
 	}
 }

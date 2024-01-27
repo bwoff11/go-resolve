@@ -16,4 +16,5 @@ while true; do
     for domain in "${DOMAINS[@]}"; do
         dig @localhost -p 1053 $domain
     done
+    sleep 0.2
 done

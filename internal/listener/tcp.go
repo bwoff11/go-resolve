@@ -13,21 +13,13 @@ import (
 )
 
 // CreateTCPListener starts a TCP DNS listener on the specified port.
-func CreateTCPListener(
-	protoConfig config.ProtocolConfig,
-	cacheConfig config.CacheConfig,
-	upstreamConfig config.UpstreamConfig,
-) {
+func CreateTCPListener(config *config.Config) {
 
 	// Create resolver
-	res := resolver.New(
-		upstreamConfig.Servers,
-		cacheConfig.TTL,
-		cacheConfig.PurgeInterval,
-	)
+	resolver := resolver.New(config.DNS.Upstream.Servers)
 
 	// Create TCP listener
-	addr := net.JoinHostPort("", strconv.Itoa(protoConfig.Port))
+	addr := net.JoinHostPort("", strconv.Itoa(config.DNS.Protocols.TCP.Port))
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("Failed to start TCP listener on %s: %v", addr, err)
@@ -43,7 +35,7 @@ func CreateTCPListener(
 			log.Printf("Error accepting TCP connection: %v", err)
 			continue
 		}
-		go handleTCPConnection(conn, res)
+		go handleTCPConnection(conn, resolver)
 	}
 }
 
@@ -72,13 +64,13 @@ func processTCPConnection(conn net.Conn, res *resolver.Resolver) {
 		return
 	}
 
-	resp, err := res.Resolve(req)
+	resp, err := res.Resolve(&req)
 	if err != nil {
 		log.Printf("Error resolving DNS query: %v", err)
 		return
 	}
 
-	sendTCPResponse(conn, resp)
+	sendTCPResponse(conn, *resp)
 }
 
 func sendTCPResponse(conn net.Conn, resp dns.Msg) {

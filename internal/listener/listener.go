@@ -5,7 +5,6 @@ import (
 
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/resolver"
-	"github.com/miekg/dns"
 )
 
 type Listener struct {
@@ -14,15 +13,6 @@ type Listener struct {
 	Port     int
 	ctx      context.Context
 	cancel   context.CancelFunc
-}
-
-// handleDNSQuery processes a DNS query using the resolver.
-func (l *Listener) handleDNSQuery(req dns.Msg) ([]byte, error) {
-	resp, err := l.Resolver.Resolve(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Pack()
 }
 
 // Close stops the listener.

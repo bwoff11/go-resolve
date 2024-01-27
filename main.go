@@ -20,14 +20,11 @@ func main() {
 
 func startListeners(config *config.Config) {
 
-	cacheConfig := config.DNS.Cache
-	upstreamConfig := config.DNS.Upstream
-
 	if config.DNS.Protocols.UDP.Enabled {
-		go listener.CreateUDPListener(config.DNS.Protocols.UDP, cacheConfig, upstreamConfig)
+		go listener.CreateUDPListener(config)
 	}
 	if config.DNS.Protocols.TCP.Enabled {
-		go listener.CreateTCPListener(config.DNS.Protocols.TCP, cacheConfig, upstreamConfig)
+		go listener.CreateTCPListener(config)
 	}
 	//if cfg.DNS.Protocols.DOT.Enabled {
 	//	go listener.CreateDOTListener(cfg.DNS.Protocols.DOT)
