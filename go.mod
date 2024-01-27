@@ -3,16 +3,19 @@ module github.com/bwoff11/go-resolve
 go 1.21.1
 
 require (
-	github.com/mattn/go-sqlite3 v1.14.20
 	github.com/miekg/dns v1.1.58
-	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/spf13/viper v1.18.2
+	gorm.io/driver/sqlite v1.5.4
+	gorm.io/gorm v1.25.6
 )
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/mattn/go-sqlite3 v1.14.20 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
