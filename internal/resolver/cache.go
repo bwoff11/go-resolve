@@ -8,8 +8,8 @@ import (
 )
 
 type CacheEntry struct {
-	Response *dns.Msg
-	CachedAt time.Time
+	Response  *dns.Msg
+	ExpiresAt time.Time
 }
 
 type Cache struct {
@@ -23,12 +23,12 @@ func NewCache() *Cache {
 	}
 }
 
-func (c *Cache) Add(key string, response *dns.Msg) {
+func (c *Cache) Add(key string, response *dns.Msg, ttl time.Duration) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.entries[key] = &CacheEntry{
-		Response: response,
-		CachedAt: time.Now(),
+		Response:  response,
+		ExpiresAt: time.Now().Add(ttl),
 	}
 }
 
@@ -36,13 +36,10 @@ func (c *Cache) Get(key string) (*dns.Msg, bool) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	entry, found := c.entries[key]
-	if !found {
-		return nil, false
-	}
-	ttl := entry.Response.Answer[0].Header().Ttl
-	if time.Since(entry.CachedAt) > time.Duration(ttl)*time.Second {
-		delete(c.entries, key)
+	if !found || time.Now().After(entry.ExpiresAt) {
 		return nil, false
 	}
 	return entry.Response, true
 }
+
+// Add a method to periodically clean up expired entries.

@@ -7,21 +7,24 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/resolver"
 	"github.com/miekg/dns"
 )
 
 type Listener struct {
 	Resolver *resolver.Resolver
-	Protocol string
+	Protocol config.ProtocolType
 	Port     int
 	ctx      context.Context
 	cancel   context.CancelFunc
 }
 
-func New(resolver *resolver.Resolver, protocol string, port int) *Listener {
+// New creates a new DNS listener with a resolver configured with upstreams and cache settings.
+func New(protocol config.ProtocolType, port int, resolver *resolver.Resolver) *Listener {
 	ctx, cancel := context.WithCancel(context.Background())
-	log.Printf("Creating listener on port %d for protocol %s\n", port, protocol)
+
+	log.Printf("Creating %s listener on port %d\n", protocol, port)
 	return &Listener{
 		Resolver: resolver,
 		Protocol: protocol,
@@ -31,6 +34,7 @@ func New(resolver *resolver.Resolver, protocol string, port int) *Listener {
 	}
 }
 
+// Listen starts the DNS listener based on the configured protocol.
 func (l *Listener) Listen() error {
 	addr := net.JoinHostPort("", strconv.Itoa(l.Port))
 	switch l.Protocol {
@@ -43,14 +47,16 @@ func (l *Listener) Listen() error {
 	}
 }
 
-func (l *Listener) Close() {
-	l.cancel()
-}
-
+// handleDNSQuery processes a DNS query using the resolver.
 func (l *Listener) handleDNSQuery(req dns.Msg) ([]byte, error) {
 	resp, err := l.Resolver.Resolve(req)
 	if err != nil {
 		return nil, err
 	}
 	return resp.Pack()
+}
+
+// Close stops the listener.
+func (l *Listener) Close() {
+	l.cancel()
 }

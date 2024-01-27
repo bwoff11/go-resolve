@@ -1,117 +1,92 @@
 package resolver
 
 import (
+	"fmt"
 	"log"
-	"time"
+	"strings"
 
 	"github.com/miekg/dns"
 	"github.com/patrickmn/go-cache"
 )
 
 type Resolver struct {
-	Upstreams    []string
-	Cache        *cache.Cache
-	resolveFuncs map[uint16]func(dns.Msg) (dns.Msg, error)
+	Upstreams []string
+	Cache     *cache.Cache
 }
 
-func New() *Resolver {
-	r := &Resolver{
-		Upstreams: []string{"8.8.8.8:53"}, // Assuming Google's DNS as the upstream
-		Cache:     cache.New(5*time.Minute, 10*time.Minute),
-	}
-	r.initResolveFuncs()
-	return r
-}
-
-// initResolveFuncs initializes the map of DNS record types to resolve functions.
-func (r *Resolver) initResolveFuncs() {
-	r.resolveFuncs = map[uint16]func(dns.Msg) (dns.Msg, error){
-		dns.TypeA:     r.resolveA,
-		dns.TypeAAAA:  r.resolveAAAA,
-		dns.TypeCNAME: r.resolveCNAME,
-		dns.TypeMX:    r.resolveMX,
-		dns.TypeNS:    r.resolveNS,
-		dns.TypeTXT:   r.resolveTXT,
+func New(upstreams []string, cache *cache.Cache) *Resolver {
+	return &Resolver{
+		Upstreams: upstreams,
+		Cache:     cache,
 	}
 }
 
 func (r *Resolver) Resolve(req dns.Msg) (dns.Msg, error) {
-	cacheKey := req.Question[0].Name + "_" + dns.TypeToString[req.Question[0].Qtype]
-
-	if cachedResp, found := r.Cache.Get(cacheKey); found {
-		log.Printf("Cache hit for %s", cacheKey)
-		cachedMsg := cachedResp.(dns.Msg)
-
-		// Adjust the ID of the cached response to match the incoming request's ID
-		cachedMsg.Id = req.Id
-
-		return cachedMsg, nil
-	}
-	log.Printf("Cache miss for %s", cacheKey)
-
-	resolveFunc, ok := r.resolveFuncs[req.Question[0].Qtype]
-	if !ok {
-		return dns.Msg{}, nil // Return empty message for unsupported types
+	cacheKey := r.generateCacheKey(req)
+	if response, found := r.getFromCache(cacheKey, req); found {
+		return response, nil
 	}
 
-	response, err := resolveFunc(req)
+	response, err := r.queryUpstream(req)
 	if err != nil {
 		return dns.Msg{}, err
 	}
 
-	// Cache the response
 	r.Cache.Set(cacheKey, response, cache.DefaultExpiration)
-
 	return response, nil
 }
 
-func (r *Resolver) resolveA(req dns.Msg) (dns.Msg, error) {
+func (r *Resolver) generateCacheKey(req dns.Msg) string {
+	return fmt.Sprintf("%s_%s", req.Question[0].Name, dns.TypeToString[req.Question[0].Qtype])
+}
 
-	c := new(dns.Client)
+func (r *Resolver) getFromCache(key string, req dns.Msg) (dns.Msg, bool) {
+	if cachedResp, found := r.Cache.Get(key); found {
+		log.Printf("Cache hit for %s", key)
+		cachedMsg := cachedResp.(dns.Msg)
+		cachedMsg.Id = req.Id
+		return cachedMsg, true
+	}
+	log.Printf("Cache miss for %s", key)
+	return dns.Msg{}, false
+}
 
-	// Set up a message to query the external DNS server
-	m := new(dns.Msg)
-	m.SetQuestion(req.Question[0].Name, dns.TypeA)
+func (r *Resolver) queryUpstream(req dns.Msg) (dns.Msg, error) {
+	client := new(dns.Client)
+	msg := new(dns.Msg)
+	msg.SetQuestion(req.Question[0].Name, req.Question[0].Qtype)
 
-	// Perform the query
-	resp, _, err := c.Exchange(m, "8.8.8.8:53")
+	upstream := r.chooseUpstream()
+	if upstream == "" {
+		return dns.Msg{}, fmt.Errorf("no upstream DNS servers configured")
+	}
+
+	// Ensure the upstream address includes a port number
+	if !strings.Contains(upstream, ":") {
+		upstream = fmt.Sprintf("%s:53", upstream) // Default DNS port is 53
+	}
+
+	resp, _, err := client.Exchange(msg, upstream)
 	if err != nil {
-		// Handle error
 		return dns.Msg{}, err
 	}
 
-	// Construct the response to the original query
-	var response dns.Msg
-	response.SetReply(&req)
-	response.Authoritative = false // Set false since it's not authoritative
-	response.Answer = resp.Answer
-
+	response := r.createResponse(req, resp.Answer)
 	return response, nil
 }
 
-func (r *Resolver) resolveAAAA(req dns.Msg) (dns.Msg, error) {
-	return dns.Msg{}, nil
+func (r *Resolver) chooseUpstream() string {
+	// Implement load balancing or failover logic if needed
+	if len(r.Upstreams) > 0 {
+		return r.Upstreams[0] // Simple selection for now
+	}
+	return ""
 }
 
-func (r *Resolver) resolveCNAME(req dns.Msg) (dns.Msg, error) {
-	return dns.Msg{}, nil
-}
-
-func (r *Resolver) resolveMX(req dns.Msg) (dns.Msg, error) {
-	return dns.Msg{}, nil
-}
-
-func (r *Resolver) resolveNS(req dns.Msg) (dns.Msg, error) {
-	return dns.Msg{}, nil
-}
-
-func (r *Resolver) resolveTXT(req dns.Msg) (dns.Msg, error) {
-	return dns.Msg{}, nil
-}
-
-func (r *Resolver) createResponse(req dns.Msg, record dns.RR) dns.Msg {
-	resp := dns.Msg{}
-	resp.SetReply(&req)
-	resp.Answer = append(resp.Answer, record)
-	return resp
+func (r *Resolver) createResponse(req dns.Msg, answers []dns.RR) dns.Msg {
+	response := dns.Msg{}
+	response.SetReply(&req)
+	response.Authoritative = false
+	response.Answer = answers
+	return response
 }
