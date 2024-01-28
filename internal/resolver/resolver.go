@@ -5,6 +5,7 @@ import (
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/upstream"
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 )
 
 type Resolver struct {
@@ -30,6 +31,12 @@ func New(hosts []string, strategy config.LoadBalancingStrategy) *Resolver {
 
 func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 
+	log.Debug().
+		Str("msg", "Processing request").
+		Str("domain", req.Question[0].Name).
+		Str("type", dns.TypeToString[req.Question[0].Qtype]).
+		Send()
+
 	// Try cache
 	if records, ok := r.Cache.Query(req.Question[0]); ok {
 		return r.requestToResponse(req, records, true), nil
@@ -43,6 +50,12 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 	}
 
 	// Return NXDOMAIN
+	log.Debug().
+		Str("msg", "No records found").
+		Str("domain", req.Question[0].Name).
+		Str("type", dns.TypeToString[req.Question[0].Qtype]).
+		Send()
+
 	return r.requestToResponse(req, []dns.RR{}, false), nil
 }
 

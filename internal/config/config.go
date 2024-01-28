@@ -2,8 +2,8 @@ package config
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -155,6 +155,10 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("error unmarshaling config: %w", err)
 	}
 
-	log.Printf("Configuration loaded: %+v\n", cfg)
+	log.Debug().
+		Str("msg", "Loaded config").
+		Str("config", fmt.Sprintf("%+v", cfg)).
+		Send()
+
 	return &cfg, nil
 }

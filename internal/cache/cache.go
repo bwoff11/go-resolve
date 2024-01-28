@@ -9,7 +9,6 @@ import (
 
 type Cache struct {
 	sync.Mutex
-	nextID  uint64
 	Records []dns.RR
 }
 
