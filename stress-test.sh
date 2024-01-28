@@ -15,6 +15,6 @@ DOMAINS=("aiseet.aa.atianqi.com" "google.com" "facebook.com" "twitter.com" "gith
 while true; do
     for domain in "${DOMAINS[@]}"; do
         dig @localhost -p 1053 $domain
-        sleep 1
+        sleep 0.1
     done
 done

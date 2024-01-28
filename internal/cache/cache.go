@@ -32,6 +32,10 @@ func New(cfg config.LocalConfig) *Cache {
 
 func (c *Cache) addLocalRecords(records []common.LocalRecord) {
 	for _, r := range records {
+		// Add a "." to the end of the domain if it doesn't already have one
+		if !strings.HasSuffix(r.Domain, ".") {
+			r.Domain = r.Domain + "."
+		}
 		if !strings.Contains(r.Domain, "*") {
 			c.Records = append(c.Records, r)
 		} else {
@@ -66,7 +70,7 @@ func (c *Cache) Add(rr []dns.RR) {
 func (c *Cache) Query(domain string, recordType uint16) []dns.RR {
 	var values []dns.RR
 	for _, record := range c.Records {
-		if record.Domain+"." == domain && record.Type == dns.TypeToString[recordType] {
+		if record.Domain == domain && record.Type == dns.TypeToString[recordType] {
 			rr, err := record.ToRR()
 			if err != nil {
 				log.Error().Err(err).Msg("failed to convert cache record to RR")
