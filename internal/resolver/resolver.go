@@ -42,7 +42,7 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 	}
 
 	// Check cache
-	if records := r.Cache.Query(qName, req.Question[0].Qtype); len(records) > 0 {
+	if records := r.Cache.Query(req.Question); len(records) > 0 {
 		return r.createResponse(req, records, true), nil
 	}
 
