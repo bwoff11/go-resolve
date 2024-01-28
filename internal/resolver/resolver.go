@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"github.com/bwoff11/go-resolve/internal/blocklist"
 	"github.com/bwoff11/go-resolve/internal/cache"
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/upstream"
@@ -12,20 +13,22 @@ type Resolver struct {
 	Upstreams []upstream.Upstream
 	Strategy  config.LoadBalancingStrategy
 	Cache     *cache.Cache
+	BlockList *blocklist.BlockList
 }
 
-func New(hosts []string, strategy config.LoadBalancingStrategy) *Resolver {
+func New(cfg *config.Config) *Resolver {
 
 	// Create upstreams from host list
 	var upstreams []upstream.Upstream
-	for _, host := range hosts {
+	for _, host := range cfg.DNS.Upstream.Servers {
 		upstreams = append(upstreams, *upstream.New(host))
 	}
 
 	return &Resolver{
 		Upstreams: upstreams,
-		Strategy:  strategy,
+		Strategy:  cfg.DNS.Upstream.Strategy,
 		Cache:     cache.New(),
+		BlockList: blocklist.New(cfg.DNS.BlockList),
 	}
 }
 
@@ -37,9 +40,33 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 		Str("type", dns.TypeToString[req.Question[0].Qtype]).
 		Send()
 
+	// Check blocklist
+	if block := r.BlockList.Query(req.Question[0].Name); block != nil {
+		log.Debug().
+			Str("msg", "Domain is blocked").
+			Str("domain", req.Question[0].Name).
+			Str("type", dns.TypeToString[req.Question[0].Qtype]).
+			Str("category", block.Category).
+			Str("reason", block.Reason).
+			Send()
+		return r.requestToResponse(req, []dns.RR{}, false), nil
+	} else {
+		log.Debug().
+			Str("msg", "Domain is not blocked").
+			Str("domain", req.Question[0].Name).
+			Str("type", dns.TypeToString[req.Question[0].Qtype]).
+			Send()
+	}
+
 	// Try cache
 	if records, ok := r.Cache.Query(req.Question[0]); ok {
 		return r.requestToResponse(req, records, true), nil
+	} else {
+		log.Debug().
+			Str("msg", "No records found in cache").
+			Str("domain", req.Question[0].Name).
+			Str("type", dns.TypeToString[req.Question[0].Qtype]).
+			Send()
 	}
 
 	// Try upstream

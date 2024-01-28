@@ -113,13 +113,8 @@ type RateLimitingConfig struct {
 }
 
 type BlockListConfig struct {
-	Local  BlockListDetail `yaml:"local"`
-	Remote BlockListDetail `yaml:"remote"`
-}
-
-type BlockListDetail struct {
-	Enabled bool     `yaml:"enabled"`
-	Sources []string `yaml:"sources"`
+	Local  []string `yaml:"local"`
+	Remote []string `yaml:"remote"`
 }
 
 type MetricsConfig struct {

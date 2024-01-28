@@ -26,10 +26,7 @@ func main() {
 func startListeners(config *config.Config) {
 
 	// Create shared resolver
-	resolver := resolver.New(
-		config.DNS.Upstream.Servers,
-		config.DNS.Upstream.Strategy,
-	)
+	resolver := resolver.New(config)
 
 	if config.DNS.Protocols.UDP.Enabled {
 		go listener.CreateUDPListener(config, resolver)

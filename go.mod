@@ -7,6 +7,7 @@ require (
 	github.com/prometheus/client_golang v1.18.0
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/viper v1.18.2
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

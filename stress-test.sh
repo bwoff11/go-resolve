@@ -9,7 +9,7 @@ fi
 DNS_PORT=$1
 
 # List of sample domains to query
-DOMAINS=("google.com" "facebook.com" "twitter.com" "github.com" "reddit.com" "youtube.com" "linkedin.com" "wikipedia.org" "amazon.com" "instagram.com")
+DOMAINS=("aiseet.aa.atianqi.com" "google.com" "facebook.com" "twitter.com" "github.com" "reddit.com" "youtube.com" "linkedin.com" "wikipedia.org" "amazon.com" "instagram.com")
 
 # Infinite loop to continuously send DNS queries
 while true; do
