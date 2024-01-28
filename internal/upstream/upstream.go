@@ -59,15 +59,25 @@ func (u *Upstream) Query(msg *dns.Msg) (*dns.Msg, error) {
 		return nil, err
 	}
 
-	log.Debug().
-		Str("msg", "Received response from upstream").
-		Str("domain", resp.Question[0].Name).
-		Str("type", dns.TypeToString[resp.Question[0].Qtype]).
-		Str("value", resp.Answer[0].String()).
-		Int("ttl", int(resp.Answer[0].Header().Ttl)).
-		Str("upstream", u.IP.String()).
-		Str("rtt", rtt.String()).
-		Send()
+	if len(resp.Answer) > 0 {
+		log.Debug().
+			Str("msg", "Received response from upstream").
+			Str("domain", resp.Question[0].Name).
+			Str("type", dns.TypeToString[resp.Question[0].Qtype]).
+			Str("value", resp.Answer[0].String()).
+			Int("ttl", int(resp.Answer[0].Header().Ttl)).
+			Str("upstream", u.IP.String()).
+			Str("rtt", rtt.String()).
+			Send()
+	} else {
+		log.Info().
+			Str("msg", "Received no response from upstream").
+			Str("domain", resp.Question[0].Name).
+			Str("type", dns.TypeToString[resp.Question[0].Qtype]).
+			Str("upstream", u.IP.String()).
+			Str("rtt", rtt.String()).
+			Send()
+	}
 
 	return resp, nil
 }
