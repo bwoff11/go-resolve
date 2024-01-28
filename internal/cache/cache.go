@@ -5,14 +5,10 @@ import (
 	"github.com/miekg/dns"
 )
 
-type RecordSet interface {
-	Query(domain string, recordType uint16) ([]dns.RR, bool)
-}
-
 type Cache struct {
-	LocalRecords    RecordSet
-	WildcardRecords RecordSet
-	RemoteRecords   RecordSet
+	LocalRecords    *LocalRecordSet
+	WildcardRecords *WildcardRecordSet
+	RemoteRecords   *RemoteRecordSet
 }
 
 func New(lr []config.StandardRecord, wr []config.WildcardRecord) *Cache {
@@ -27,7 +23,7 @@ func New(lr []config.StandardRecord, wr []config.WildcardRecord) *Cache {
 // servers are queried. Therefore, this function only supports additions to the
 // remote record set.
 func (c *Cache) Add(records []dns.RR) {
-	return
+	c.RemoteRecords.Add(records)
 }
 
 func (c *Cache) Query(domain string, recordType uint16) ([]dns.RR, bool) {

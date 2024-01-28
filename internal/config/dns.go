@@ -43,7 +43,13 @@ type RateLimitingConfig struct {
 
 type UpstreamConfig struct {
 	Enabled  bool                  `yaml:"enabled"`
-	Timeout  string                `yaml:"timeout"`
 	Strategy LoadBalancingStrategy `yaml:"strategy"`
-	Servers  []string              `yaml:"servers"`
+	Servers  []UpstreamServer      `yaml:"servers"`
+}
+
+type UpstreamServer struct {
+	Name    string `yaml:"name"`
+	IP      string `yaml:"ip"`
+	Port    int    `yaml:"port"`
+	Timeout int    `yaml:"timeout"`
 }

@@ -1,83 +1,57 @@
 package upstream
 
 import (
-	"fmt"
-	"net"
-	"sync"
-	"time"
-
+	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
 )
 
-// Upstream represents an upstream DNS server.
 type Upstream struct {
-	IP         net.IP
-	totalRTT   time.Duration
-	queryCount int
-	rttLock    sync.Mutex // Protects access to totalRTT and queryCount
+	Servers  []*UpstreamServer            `yaml:"upstreams"`
+	Strategy config.LoadBalancingStrategy `yaml:"strategy"`
 }
 
-// New creates a new Upstream object with the specified IP address.
-func New(host string) *Upstream {
+func New(cfg config.UpstreamConfig) *Upstream {
 
-	log.Debug().
-		Str("msg", "Creating new upstream").
-		Str("host", host).
-		Send()
-
-	// Parse IP address
-	ip := net.ParseIP(host)
-	if ip == nil {
-		log.Fatal().
-			Str("msg", "Failed to parse IP address").
-			Str("host", host).
-			Send()
+	// Create upstream servers
+	var servers []*UpstreamServer
+	for _, server := range cfg.Servers {
+		servers = append(servers, NewUpstreamServer(server.IP, server.Port, server.Timeout))
 	}
 
-	// Return new Upstream
+	// Return new upstream
 	return &Upstream{
-		IP: ip,
+		Servers:  servers,
+		Strategy: cfg.Strategy,
 	}
 }
 
-// Query sends the given DNS query message to the upstream DNS server and returns the response.
-func (u *Upstream) Query(msg *dns.Msg) (*dns.Msg, error) {
+func (u *Upstream) Query(msg *dns.Msg) []dns.RR {
+	server := u.selectServer()
+	return server.Query(msg)
+}
 
-	log.Debug().
-		Str("msg", "Sending request to upstream").
-		Str("domain", msg.Question[0].Name).
-		Str("type", dns.TypeToString[msg.Question[0].Qtype]).
-		Str("upstream", u.IP.String()).
-		Send()
-
-	c := new(dns.Client)
-	address := fmt.Sprintf("%s:53", u.IP.String()) // Ensure IP is in string format
-
-	resp, rtt, err := c.Exchange(msg, address)
-	if err != nil {
-		return nil, err
+func (u *Upstream) selectServer() *UpstreamServer {
+	switch u.Strategy {
+	case config.LoadBalancingStrategyRandom:
+		return u.randomServer()
+	case config.LoadBalancingStrategyRoundRobin:
+		return u.roundRobinServer()
+	default:
+		return u.randomServer()
 	}
+}
 
-	if len(resp.Answer) > 0 {
-		log.Debug().
-			Str("msg", "Received response from upstream").
-			Str("domain", resp.Question[0].Name).
-			Str("type", dns.TypeToString[resp.Question[0].Qtype]).
-			Str("value", resp.Answer[0].String()).
-			Int("ttl", int(resp.Answer[0].Header().Ttl)).
-			Str("upstream", u.IP.String()).
-			Str("rtt", rtt.String()).
-			Send()
-	} else {
-		log.Info().
-			Str("msg", "Received no response from upstream").
-			Str("domain", resp.Question[0].Name).
-			Str("type", dns.TypeToString[resp.Question[0].Qtype]).
-			Str("upstream", u.IP.String()).
-			Str("rtt", rtt.String()).
-			Send()
-	}
+func (u *Upstream) randomServer() *UpstreamServer {
+	// Unimplemented
+	return u.Servers[0]
+}
 
-	return resp, nil
+func (u *Upstream) roundRobinServer() *UpstreamServer {
+	// Unimplemented
+	return u.Servers[0]
+}
+
+func (u *Upstream) createResponse(req *dns.Msg, records []dns.RR, cached bool) *dns.Msg {
+	// Unimplemented
+	return nil
 }

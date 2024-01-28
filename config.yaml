@@ -24,12 +24,16 @@ dns:
 
   upstream:
     enabled: true
-    timeout: "5s"
     strategy: "random" # Options: random, roundRobin, sequential, latency
     servers:
-    - "8.8.8.8"
-    - "8.8.4.4"
-    - "1.1.1.1"
+    - name: "Google"
+      ip: "8.8.8.8"
+      port: 53
+      timeout: 5
+    - name: "Cloudflare"
+      ip: "1.1.1.1"
+      port: 53
+      timeout: 5
 
   protocols:
     udp:
