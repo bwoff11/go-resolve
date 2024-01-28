@@ -4,6 +4,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/miekg/dns"
 )
 
@@ -23,6 +24,14 @@ func (r *Record) IsExpired() bool {
 		return false
 	}
 	return r.ExpiresAt.Before(time.Now())
+}
+
+func (r *Record) FromConfig(cfg config.DNSRecord) {
+	r.Domain = cfg.Domain + "."
+	r.Type = dns.StringToType[cfg.Type]
+	r.Value = cfg.Value
+	r.TTL = cfg.TTL
+	r.ExpiresAt = nil
 }
 
 func (r *Record) FromRR(rr dns.RR) Record {

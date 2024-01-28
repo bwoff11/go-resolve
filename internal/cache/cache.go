@@ -15,18 +15,25 @@ type Cache struct {
 	db *gorm.DB
 }
 
-func New(cacheConfig config.CacheConfig, localDNSConfig config.LocalDNSConfig) (*Cache, error) {
+func New(cacheConfig config.CacheConfig, localRecords []config.DNSRecord) (*Cache, error) {
 	db := createNewDatabase()
 	cache := &Cache{db: db}
-	if err := cache.addInitialRecords(localDNSConfig); err != nil {
+
+	if err := cache.addLocalRecords(localRecords); err != nil {
 		return nil, err
 	}
 
 	return cache, nil
 }
 
-func (c *Cache) addInitialRecords(cfg config.LocalDNSConfig) error {
-	//todo
+func (c *Cache) addLocalRecords(cfg []config.DNSRecord) error {
+	for _, localRecord := range cfg {
+		var record models.Record
+		record.FromConfig(localRecord)
+		if err := c.db.Create(&record).Error; err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

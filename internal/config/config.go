@@ -51,7 +51,7 @@ type DNSConfig struct {
 	Cache          CacheConfig        `yaml:"cache"`
 	Upstream       UpstreamConfig     `yaml:"upstream"`
 	Protocols      ProtocolConfigs    `yaml:"protocols"`
-	Local          LocalDNSConfig     `yaml:"local"`
+	Local          []DNSRecord        `yaml:"local"`
 	RateLimiting   RateLimitingConfig `yaml:"rateLimiting"`
 	BlockList      BlockListConfig    `yaml:"blockList"`
 }
@@ -84,15 +84,11 @@ type ProtocolConfig struct {
 	StrictSNI   bool   `yaml:"strictSNI,omitempty"`
 }
 
-type LocalDNSConfig struct {
-	Enabled bool       `yaml:"enabled"`
-	Records DNSRecords `yaml:"records"`
-}
-
-type DNSRecords struct {
-	A     []ARecord     `yaml:"a"`
-	AAAA  []AAAARecord  `yaml:"aaaa"`
-	CNAME []CNAMERecord `yaml:"cname"`
+type DNSRecord struct {
+	Domain string `yaml:"domain"`
+	Type   string `yaml:"type"`
+	Value  string `yaml:"value"`
+	TTL    int    `yaml:"ttl"`
 }
 
 type ARecord struct {
