@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bwoff11/go-resolve/internal/cache"
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/listener"
 	"github.com/bwoff11/go-resolve/internal/resolver"
@@ -18,25 +17,18 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Load the cache
-	cache, err := cache.New(cfg.DNS.Cache, cfg.DNS.Local)
-	if err != nil {
-		log.Fatalf("Failed to load cache: %v", err)
-	}
-
 	startMetricsServer(cfg.Metrics)
-	startListeners(cfg, cache)
+	startListeners(cfg)
 
 	select {}
 }
 
-func startListeners(config *config.Config, cache *cache.Cache) {
+func startListeners(config *config.Config) {
 
 	// Create shared resolver
 	resolver := resolver.New(
 		config.DNS.Upstream.Servers,
 		config.DNS.Upstream.Strategy,
-		cache,
 	)
 
 	if config.DNS.Protocols.UDP.Enabled {

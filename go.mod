@@ -1,13 +1,12 @@
 module github.com/bwoff11/go-resolve
 
-go 1.21.1
+go 1.21
 
 require (
 	github.com/miekg/dns v1.1.58
 	github.com/prometheus/client_golang v1.18.0
+	github.com/rs/zerolog v1.31.0
 	github.com/spf13/viper v1.18.2
-	gorm.io/driver/sqlite v1.5.4
-	gorm.io/gorm v1.25.6
 )
 
 require (
@@ -15,10 +14,9 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/mattn/go-sqlite3 v1.14.20 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect

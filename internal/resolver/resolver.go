@@ -1,12 +1,11 @@
 package resolver
 
 import (
-	"log"
-
 	"github.com/bwoff11/go-resolve/internal/cache"
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/upstream"
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 )
 
 type Resolver struct {
@@ -15,11 +14,7 @@ type Resolver struct {
 	Cache     *cache.Cache
 }
 
-func New(
-	hosts []string,
-	strategy config.LoadBalancingStrategy,
-	cache *cache.Cache,
-) *Resolver {
+func New(hosts []string, strategy config.LoadBalancingStrategy) *Resolver {
 
 	// Create upstreams from host list
 	var upstreams []upstream.Upstream
@@ -30,29 +25,22 @@ func New(
 	return &Resolver{
 		Upstreams: upstreams,
 		Strategy:  strategy,
-		Cache:     cache,
+		Cache:     cache.New(),
 	}
 }
 
 func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 
-	question := req.Question[0]
-
 	// Try cache
-	if r.Cache != nil {
-		if answer, auth, err := r.Cache.Query(question); len(answer) > 0 {
-			log.Printf("Cache hit for %s", question.Name)
-			return r.requestToResponse(req, answer, auth), nil
-		} else if err != nil {
-			log.Printf("Failed to query cache: %v", err)
-			return nil, err
-		}
+	if records, ok := r.Cache.Query(req.Question[0]); ok {
+		log.Debug().Msg("Cache hit")
+		return r.requestToResponse(req, records, true), nil
 	}
 
 	// Try upstream
 	upstream := r.selectUpstream()
 	if msg, err := upstream.Query(req); err == nil {
-		log.Printf("Upstream hit for %s", question.Name)
+		log.Debug().Msg("Upstream hit")
 		r.Cache.Add(msg.Answer)
 		return r.requestToResponse(req, msg.Answer, false), nil
 	}
