@@ -127,8 +127,9 @@ type BlockListDetail struct {
 }
 
 type MetricsConfig struct {
-	Enabled  bool   `yaml:"enabled"`
-	Endpoint string `yaml:"endpoint"`
+	Enabled bool   `yaml:"enabled"`
+	Route   string `yaml:"route"`
+	Port    int    `yaml:"port"`
 }
 
 // Load reads the configuration file and unmarshals it into the Config struct.

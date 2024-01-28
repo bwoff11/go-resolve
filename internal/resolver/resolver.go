@@ -1,8 +1,6 @@
 package resolver
 
 import (
-	"log"
-
 	"github.com/bwoff11/go-resolve/internal/cache"
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/upstream"
@@ -21,8 +19,6 @@ func New(
 	cache *cache.Cache,
 ) *Resolver {
 
-	log.Printf("Creating resolver with strategy: %s\n", strategy)
-
 	// Create upstreams from host list
 	var upstreams []upstream.Upstream
 	for _, host := range hosts {
@@ -39,40 +35,54 @@ func New(
 func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 
 	question := req.Question[0]
-	name := question.Name
-	recordType := question.Qtype
 
-	// Check the cache
+	// Try cache
 	if r.Cache != nil {
-		record, err := r.Cache.Query(name, recordType)
-		if err == nil && record != nil {
-			// Cache hit
-			log.Printf("Cache hit for %s\n", name)
-			return record.ToDNSMsg(int(req.Id)), nil
-		} else if err != nil {
-			log.Printf("Error querying cache: %v\n", err)
-			// Optionally handle cache query error
+		if answer, auth, err := r.Cache.Query(question); err == nil {
+			r.requestToResponse(req, answer, auth)
 		}
-		// Optionally handle cache miss
 	}
 
+	// Try upstream
 	upstream := r.selectUpstream()
-	resp, err := upstream.Query(req)
-	if err != nil {
-		return nil, err
+	if msg, err := upstream.Query(req); err == nil {
+		//r.Cache.Add(msg.Answer)
+		r.requestToResponse(req, msg.Answer, false)
 	}
 
-	// Set the response ID to match the request ID
-	resp.Id = req.Id
-
-	// Cache the response
-	if r.Cache != nil {
-		r.Cache.Add(resp)
-	}
-
-	return resp, nil
+	// Return NXDOMAIN - todo
+	return nil, nil
 }
 
 func (r *Resolver) selectUpstream() *upstream.Upstream {
+	switch r.Strategy {
+	case config.LoadBalancingStrategyLatency:
+		return &r.Upstreams[0]
+	case config.LoadBalancingStrategyRandom:
+		return &r.Upstreams[0]
+	case config.LoadBalancingStrategyRoundRobin:
+	}
 	return &r.Upstreams[0]
+}
+
+// Responsible for converting a request to a response by
+// modifying all appropriate fields.
+func (r *Resolver) requestToResponse(req *dns.Msg, answer []dns.RR, authoritative bool) *dns.Msg {
+	return &dns.Msg{
+		MsgHdr: dns.MsgHdr{
+			Id:                 req.Id,               // ID copied from request
+			Response:           true,                 // This is a response
+			Opcode:             req.Opcode,           // Type of query set by client and copied to response
+			Authoritative:      authoritative,        // Whether the response is authoritative. Only true for local records
+			Truncated:          false,                // Whether the response was truncated. This should never be true.
+			RecursionDesired:   req.RecursionDesired, // Whether the client wants recursion
+			RecursionAvailable: true,                 // Whether recursion is available. Need to look into this.
+			Rcode:              dns.RcodeSuccess,     // Status of the response. 0 = success
+		},
+		Compress: false, // Whether to compress the response. This should never be true.
+		Question: req.Question,
+		Answer:   answer,
+		Ns:       []dns.RR{}, // todo
+		Extra:    []dns.RR{}, // todo
+	}
 }
