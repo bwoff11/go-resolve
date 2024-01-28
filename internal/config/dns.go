@@ -1,5 +1,9 @@
 package config
 
+import (
+	"github.com/bwoff11/go-resolve/internal/common"
+)
+
 type DNSConfig struct {
 	TTL            int                `yaml:"TTL"`
 	MaxMessageSize int                `yaml:"maxMessageSize"`
@@ -52,4 +56,9 @@ type UpstreamServer struct {
 	IP      string `yaml:"ip"`
 	Port    int    `yaml:"port"`
 	Timeout int    `yaml:"timeout"`
+}
+
+type LocalConfig struct {
+	Enabled bool                 `yaml:"enabled"`
+	Records []common.LocalRecord `yaml:"records"`
 }
