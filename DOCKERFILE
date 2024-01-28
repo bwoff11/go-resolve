@@ -1,0 +1,8 @@
+FROM golang:1.18 as builder
+WORKDIR /app
+COPY . .
+RUN go build -o go-resolve
+FROM alpine:latest
+WORKDIR /root/
+COPY --from=builder /app/myapp .
+CMD ["./go-resolve"]
