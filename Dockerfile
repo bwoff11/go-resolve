@@ -1,17 +1,13 @@
-# Use the official Go image as the base image
-FROM golang:latest
+FROM golang:latest as builder
+WORKDIR /build
+COPY ./ ./
+RUN go mod download
+RUN CGO_ENABLED=0 go build -o ./main
 
-# Set the working directory inside the container
+
+FROM scratch
 WORKDIR /app
-
-# Copy the source code into the container
-COPY . .
-
-# Enable cgo support
-ENV CGO_ENABLED=1
-
-# Build the Go application
-RUN go build -o go-resolve .
-
-# Set the entry point for the container
-ENTRYPOINT ["./go-resolve"]
+COPY ./config.yaml ./config.yaml
+COPY --from=builder /build/main ./main
+EXPOSE 80
+ENTRYPOINT ["./main"]

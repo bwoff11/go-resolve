@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 )
 
 type Cache struct {
@@ -25,6 +26,13 @@ func (c *Cache) Add(records []dns.RR) {
 	}
 
 	for _, record := range records {
+		log.Debug().
+			Str("msg", "Adding record to cache").
+			Str("domain", record.Header().Name).
+			Str("type", dns.TypeToString[record.Header().Rrtype]).
+			Str("value", getRRValue(record)).
+			Int("ttl", int(record.Header().Ttl)).
+			Send()
 		c.Records = append(c.Records, record)
 	}
 }
@@ -40,6 +48,13 @@ func (c *Cache) Query(question dns.Question) ([]dns.RR, bool) {
 	var records []dns.RR
 	for _, record := range c.Records {
 		if record.Header().Name == question.Name && record.Header().Rrtype == question.Qtype {
+			log.Debug().
+				Str("msg", "Found record in cache").
+				Str("domain", record.Header().Name).
+				Str("type", dns.TypeToString[record.Header().Rrtype]).
+				Str("value", getRRValue(record)).
+				Int("ttl", int(record.Header().Ttl)).
+				Send()
 			records = append(records, record)
 		}
 	}

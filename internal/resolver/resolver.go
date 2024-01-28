@@ -5,7 +5,6 @@ import (
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/upstream"
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
 )
 
 type Resolver struct {
@@ -33,14 +32,12 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 
 	// Try cache
 	if records, ok := r.Cache.Query(req.Question[0]); ok {
-		log.Debug().Msg("Cache hit")
 		return r.requestToResponse(req, records, true), nil
 	}
 
 	// Try upstream
 	upstream := r.selectUpstream()
 	if msg, err := upstream.Query(req); err == nil {
-		log.Debug().Msg("Upstream hit")
 		r.Cache.Add(msg.Answer)
 		return r.requestToResponse(req, msg.Answer, false), nil
 	}
