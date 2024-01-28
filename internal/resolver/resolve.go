@@ -11,7 +11,6 @@ import (
 
 // Resolve processes the DNS query and returns a response.
 func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
-	logRequest(req)
 	if block := r.checkBlockList(req); block != nil {
 		return r.blockedResponse(req), nil
 	}
@@ -21,14 +20,6 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 	}
 
 	return r.queryUpstream(req)
-}
-
-func logRequest(req *dns.Msg) {
-	log.Debug().
-		Str("msg", "Processing request").
-		Str("domain", req.Question[0].Name).
-		Str("type", dns.TypeToString[req.Question[0].Qtype]).
-		Send()
 }
 
 func (r *Resolver) checkBlockList(req *dns.Msg) *blocklist.Block {
