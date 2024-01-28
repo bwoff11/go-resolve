@@ -1,6 +1,8 @@
 package resolver
 
 import (
+	"log"
+
 	"github.com/bwoff11/go-resolve/internal/cache"
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/upstream"
@@ -39,19 +41,21 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 	// Try cache
 	if r.Cache != nil {
 		if answer, auth, err := r.Cache.Query(question); err == nil {
-			r.requestToResponse(req, answer, auth)
+			log.Printf("Cache hit for %s", question.Name)
+			return r.requestToResponse(req, answer, auth), nil
 		}
 	}
 
 	// Try upstream
 	upstream := r.selectUpstream()
 	if msg, err := upstream.Query(req); err == nil {
-		//r.Cache.Add(msg.Answer)
-		r.requestToResponse(req, msg.Answer, false)
+		log.Printf("Upstream hit for %s", question.Name)
+		r.Cache.Add(msg.Answer)
+		return r.requestToResponse(req, msg.Answer, false), nil
 	}
 
-	// Return NXDOMAIN - todo
-	return nil, nil
+	// Return NXDOMAIN
+	return r.requestToResponse(req, []dns.RR{}, false), nil
 }
 
 func (r *Resolver) selectUpstream() *upstream.Upstream {
