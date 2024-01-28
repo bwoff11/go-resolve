@@ -21,7 +21,7 @@ type Resolver struct {
 func New(cfg *config.Config) *Resolver {
 	return &Resolver{
 		Upstream:  upstream.New(cfg.DNS.Upstream),
-		Cache:     cache.New(cfg.DNS.Local.Standard, cfg.DNS.Local.Wildcard),
+		Cache:     cache.New(cfg.DNS.Local),
 		BlockList: blocklist.New(cfg.DNS.BlockList),
 	}
 }
@@ -41,23 +41,14 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 		return r.blockedResponse(req), nil
 	}
 
-	// Check local cache
-	/*if records := lCache.Query(qName, qType); len(records) > 0 {
+	// Check cache
+	if records := r.Cache.Query(qName, req.Question[0].Qtype); len(records) > 0 {
 		return r.createResponse(req, records, true), nil
 	}
-
-	// Check wildcard cache
-	if records := wCache.Query(qName, qType); len(records) > 0 {
-		return r.createResponse(req, records, true), nil
-	}
-
-	// Check remote cache
-	if records := rCache.Query(qName, qType); len(records) > 0 {
-		return r.createResponse(req, records, true), nil
-	}*/
 
 	// Check upstream
 	if records := r.Upstream.Query(req); len(records) > 0 {
+		r.Cache.Add(records)
 		return r.createResponse(req, records, false), nil
 	}
 

@@ -50,8 +50,3 @@ func (u *Upstream) roundRobinServer() *UpstreamServer {
 	// Unimplemented
 	return u.Servers[0]
 }
-
-func (u *Upstream) createResponse(req *dns.Msg, records []dns.RR, cached bool) *dns.Msg {
-	// Unimplemented
-	return nil
-}
