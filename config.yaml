@@ -1,16 +1,3 @@
-web:
-  enabled: true
-  port: 8080
-  tls:
-    enabled: false
-    certFile: "path/to/cert.pem"
-    keyFile: "path/to/key.pem"
-
-logging:
-  level: "info"
-  output: "stdout" # Options: stdout, file
-  filePath: "path/to/logfile" # If output is file
-
 metrics:
   enabled: true
   route: "/metrics"
@@ -20,10 +7,19 @@ dns:
   TTL: 3600
   maxMessageSize: 4096
 
+  blockList:
+    local:
+      #- path/to/blocklist1
+      #- path/to/blocklist2
+    remote:
+      - https://raw.githubusercontent.com/bwoff11/blocklists/main/ads.yml
+      - https://raw.githubusercontent.com/bwoff11/blocklists/main/malware.yml
+      - https://raw.githubusercontent.com/bwoff11/blocklists/main/other.yml
+      - https://raw.githubusercontent.com/bwoff11/blocklists/main/tracking.yml
+
   cache:
     enabled: true
     size: 10000 # Number of entries to cache
-    ttl: "300s"
     purgeInterval: "60s"
 
   upstream:
@@ -50,18 +46,28 @@ dns:
       strictSNI: false # Enforce strict Server Name Indication checking
 
   local:
-    - domain: "example.com"
-      type: "A"
-      value: "1.2.3.4"
-      ttl: 3600
-    - domain: "example.net"
-      type: "AAAA"
-      value: "2001:db8::1"
-      ttl: 3600
-    - domain: "test.example.com"
-      type: "CNAME"
-      value: "example.com"
-      ttl: 3600
+    standard:
+      - domain: "example.com"
+        type: "A"
+        value: "1.2.3.4"
+        ttl: 3600
+      - domain: "example.net"
+        type: "AAAA"
+        value: "2001:db8::1"
+        ttl: 3600
+      - domain: "www.example.com"
+        type: "CNAME"
+        value: "example.com"
+        ttl: 3600
+    wildcard:
+      - pattern: "*.example.com"
+        type: "A"
+        value: "example.com"
+        ttl: 3600
+      - pattern: "*.example.net"
+        type: "CNAME"
+        value: "redirect.example.net"
+        ttl: 3600
 
 # --- Unimplemented ---
 
@@ -70,12 +76,15 @@ dns:
     requestsPerSecond: 10
     burstSize: 20 # Maximum number of requests that can be allowed in a burst
 
-  blockList:
-    local:
-      #- path/to/blocklist1
-      #- path/to/blocklist2
-    remote:
-      - https://raw.githubusercontent.com/bwoff11/blocklists/main/ads.yml
-      - https://raw.githubusercontent.com/bwoff11/blocklists/main/malware.yml
-      - https://raw.githubusercontent.com/bwoff11/blocklists/main/other.yml
-      - https://raw.githubusercontent.com/bwoff11/blocklists/main/tracking.yml
+web:
+  enabled: true
+  port: 8080
+  tls:
+    enabled: false
+    certFile: "path/to/cert.pem"
+    keyFile: "path/to/key.pem"
+
+logging:
+  level: "info"
+  output: "stdout" # Options: stdout, file
+  filePath: "path/to/logfile" # If output is file

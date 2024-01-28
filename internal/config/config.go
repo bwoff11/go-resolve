@@ -28,12 +28,12 @@ type Config struct {
 }
 
 type WebConfig struct {
-	Enabled bool      `yaml:"enabled"`
-	Port    int       `yaml:"port"`
-	TLS     TLSConfig `yaml:"tls"`
+	Enabled bool         `yaml:"enabled"`
+	Port    int          `yaml:"port"`
+	TLS     WebTLSConfig `yaml:"tls"`
 }
 
-type TLSConfig struct {
+type WebTLSConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	CertFile string `yaml:"certFile"`
 	KeyFile  string `yaml:"keyFile"`
@@ -43,78 +43,6 @@ type LoggingConfig struct {
 	Level    string `yaml:"level"`
 	Output   string `yaml:"output"`
 	FilePath string `yaml:"filePath"`
-}
-
-type DNSConfig struct {
-	TTL            int                `yaml:"TTL"`
-	MaxMessageSize int                `yaml:"maxMessageSize"`
-	Cache          CacheConfig        `yaml:"cache"`
-	Upstream       UpstreamConfig     `yaml:"upstream"`
-	Protocols      ProtocolConfigs    `yaml:"protocols"`
-	Local          []DNSRecord        `yaml:"local"`
-	RateLimiting   RateLimitingConfig `yaml:"rateLimiting"`
-	BlockList      BlockListConfig    `yaml:"blockList"`
-}
-
-type CacheConfig struct {
-	Enabled       bool   `yaml:"enabled"`
-	Size          int    `yaml:"size"`
-	TTL           string `yaml:"ttl"`
-	PurgeInterval string `yaml:"purgeInterval"`
-}
-
-type UpstreamConfig struct {
-	Enabled  bool                  `yaml:"enabled"`
-	Timeout  string                `yaml:"timeout"`
-	Strategy LoadBalancingStrategy `yaml:"strategy"`
-	Servers  []string              `yaml:"servers"`
-}
-
-type ProtocolConfigs struct {
-	UDP ProtocolConfig `yaml:"udp"`
-	TCP ProtocolConfig `yaml:"tcp"`
-	Dot ProtocolConfig `yaml:"dot"`
-}
-
-type ProtocolConfig struct {
-	Enabled     bool   `yaml:"enabled"`
-	Port        int    `yaml:"port"`
-	TLSCertFile string `yaml:"tlsCertFile,omitempty"`
-	TLSKeyFile  string `yaml:"tlsKeyFile,omitempty"`
-	StrictSNI   bool   `yaml:"strictSNI,omitempty"`
-}
-
-type DNSRecord struct {
-	Domain string `yaml:"domain"`
-	Type   string `yaml:"type"`
-	Value  string `yaml:"value"`
-	TTL    int    `yaml:"ttl"`
-}
-
-type ARecord struct {
-	Domain string `yaml:"domain"`
-	IP     string `yaml:"ip"`
-}
-
-type AAAARecord struct {
-	Domain string `yaml:"domain"`
-	IP     string `yaml:"ip"`
-}
-
-type CNAMERecord struct {
-	Domain string `yaml:"domain"`
-	Target string `yaml:"target"`
-}
-
-type RateLimitingConfig struct {
-	Enabled           bool `yaml:"enabled"`
-	RequestsPerSecond int  `yaml:"requestsPerSecond"`
-	BurstSize         int  `yaml:"burstSize"`
-}
-
-type BlockListConfig struct {
-	Local  []string `yaml:"local"`
-	Remote []string `yaml:"remote"`
 }
 
 type MetricsConfig struct {

@@ -1,62 +1,55 @@
 package cache
 
 import (
-	"sync"
-
+	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
 )
 
+type RecordSet interface {
+	Query(domain string, recordType uint16) ([]dns.RR, bool)
+}
+
 type Cache struct {
-	sync.Mutex
-	Records []dns.RR
+	LocalRecords    RecordSet
+	WildcardRecords RecordSet
+	RemoteRecords   RecordSet
 }
 
-func New() *Cache {
-	return &Cache{}
+func New(lr []config.StandardRecord, wr []config.WildcardRecord) *Cache {
+	return &Cache{
+		LocalRecords:    NewLocalRecordSet(lr),
+		WildcardRecords: NewWildcardRecordSet(wr),
+		RemoteRecords:   NewRemoteRecordSet(),
+	}
 }
 
+// The only time records should be added outside of New() is when the upstream
+// servers are queried. Therefore, this function only supports additions to the
+// remote record set.
 func (c *Cache) Add(records []dns.RR) {
-	c.Lock()
-	defer c.Unlock()
-
-	if c.Records == nil {
-		c.Records = []dns.RR{}
-	}
-
-	for _, record := range records {
-		log.Debug().
-			Str("msg", "Adding record to cache").
-			Str("domain", record.Header().Name).
-			Str("type", dns.TypeToString[record.Header().Rrtype]).
-			Str("value", getRRValue(record)).
-			Int("ttl", int(record.Header().Ttl)).
-			Send()
-		c.Records = append(c.Records, record)
-	}
+	return
 }
 
-func (c *Cache) Query(question dns.Question) ([]dns.RR, bool) {
-	c.Lock()
-	defer c.Unlock()
+func (c *Cache) Query(domain string, recordType uint16) ([]dns.RR, bool) {
 
-	if c.Records == nil {
-		return nil, false
+	// Check local records first.
+	records, ok := c.LocalRecords.Query(domain, recordType)
+	if ok {
+		return records, true
 	}
 
-	var records []dns.RR
-	for _, record := range c.Records {
-		if record.Header().Name == question.Name && record.Header().Rrtype == question.Qtype {
-			log.Debug().
-				Str("msg", "Found record in cache").
-				Str("domain", record.Header().Name).
-				Str("type", dns.TypeToString[record.Header().Rrtype]).
-				Str("value", getRRValue(record)).
-				Int("ttl", int(record.Header().Ttl)).
-				Send()
-			records = append(records, record)
-		}
+	// Check wildcard records next.
+	records, ok = c.WildcardRecords.Query(domain, recordType)
+	if ok {
+		return records, true
 	}
 
-	return records, len(records) > 0
+	// Check remote records last.
+	records, ok = c.RemoteRecords.Query(domain, recordType)
+	if ok {
+		return records, true
+	}
+
+	// No records found.
+	return nil, false
 }

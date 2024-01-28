@@ -19,7 +19,8 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 		return r.createResponse(req, records, true), nil
 	}
 
-	return r.queryUpstream(req)
+	upstream := r.selectUpstream()
+	return upstream.Query(req)
 }
 
 func (r *Resolver) checkBlockList(req *dns.Msg) *blocklist.Block {
@@ -36,7 +37,7 @@ func (r *Resolver) checkBlockList(req *dns.Msg) *blocklist.Block {
 }
 
 func (r *Resolver) queryCache(req *dns.Msg) ([]dns.RR, bool) {
-	records, ok := r.Cache.Query(req.Question[0])
+	records, ok := r.Cache.Query(req.Question[0].Name, req.Question[0].Qtype)
 	if ok {
 		log.Debug().
 			Str("msg", "Found record in cache").
@@ -47,11 +48,6 @@ func (r *Resolver) queryCache(req *dns.Msg) ([]dns.RR, bool) {
 			Send()
 	}
 	return records, ok
-}
-
-func (r *Resolver) queryUpstream(req *dns.Msg) (*dns.Msg, error) {
-	upstream := r.selectUpstream()
-	return upstream.Query(req)
 }
 
 // selectUpstream selects an upstream server based on the configured strategy.

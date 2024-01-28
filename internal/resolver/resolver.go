@@ -19,7 +19,7 @@ func New(cfg *config.Config) *Resolver {
 	return &Resolver{
 		Upstreams: createUpstreams(cfg),
 		Strategy:  cfg.DNS.Upstream.Strategy,
-		Cache:     cache.New(),
+		Cache:     cache.New(cfg.DNS.Local.Standard, cfg.DNS.Local.Wildcard),
 		BlockList: blocklist.New(cfg.DNS.BlockList),
 	}
 }
