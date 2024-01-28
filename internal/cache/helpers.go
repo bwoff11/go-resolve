@@ -14,8 +14,3 @@ func ensureTrailingDot(domain string) string {
 func isWildcard(domain string) bool {
 	return strings.Contains(domain, "*")
 }
-
-// convertToSQLPattern converts a wildcard domain to an SQL-like pattern.
-func convertToSQLPattern(domain string) string {
-	return strings.Replace(domain, "*", "%", 1)
-}

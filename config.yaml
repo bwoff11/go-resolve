@@ -50,26 +50,28 @@ dns:
       strictSNI: false # Enforce strict Server Name Indication checking
 
   local:
-    - domain: "example.com"
-      type: "A"
-      value: "1.2.3.4"
-      ttl: 3600
-    - domain: "example.net"
-      type: "AAAA"
-      value: "2001:db8::1"
-      ttl: 3600
-    - domain: "www.example.com"
-      type: "CNAME"
-      value: "example.com"
-      ttl: 3600
-    - domain: "*.example.com"
-      type: "A"
-      value: "example.com"
-      ttl: 3600
-    - domain: "*.example.net"
-      type: "CNAME"
-      value: "redirect.example.net"
-      ttl: 3600
+    enabled: true
+    records:
+      - domain: "example.com"
+        type: "A"
+        value: "1.2.3.4"
+        ttl: 3600
+      - domain: "example.net"
+        type: "AAAA"
+        value: "2001:db8::1"
+        ttl: 3600
+      - domain: "www.example.com"
+        type: "CNAME"
+        value: "example.com"
+        ttl: 3600
+      - domain: "*.example.com"
+        type: "A"
+        value: "example.com"
+        ttl: 3600
+      - domain: "*.example.net"
+        type: "CNAME"
+        value: "redirect.example.net"
+        ttl: 3600
 
 # --- Unimplemented ---
 
