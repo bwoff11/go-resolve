@@ -40,9 +40,12 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 
 	// Try cache
 	if r.Cache != nil {
-		if answer, auth, err := r.Cache.Query(question); err == nil {
+		if answer, auth, err := r.Cache.Query(question); len(answer) > 0 {
 			log.Printf("Cache hit for %s", question.Name)
 			return r.requestToResponse(req, answer, auth), nil
+		} else if err != nil {
+			log.Printf("Failed to query cache: %v", err)
+			return nil, err
 		}
 	}
 

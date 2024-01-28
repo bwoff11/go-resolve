@@ -12,7 +12,7 @@ type Record struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	ExpiresAt *time.Time
-	DomainID  uint
+	Domain    string
 	Type      uint16
 	Value     string
 	TTL       int
@@ -25,22 +25,22 @@ func (r *Record) IsExpired() bool {
 	return r.ExpiresAt.Before(time.Now())
 }
 
-func (r *Record) FromRR(rr dns.RR, domainID uint) Record {
+func (r *Record) FromRR(rr dns.RR) Record {
 	switch rr.Header().Rrtype {
 	case dns.TypeA:
-		return r.FromA(rr.(*dns.A), domainID)
+		return r.FromA(rr.(*dns.A))
 	case dns.TypeAAAA:
-		return r.FromAAAA(rr.(*dns.AAAA), domainID)
+		return r.FromAAAA(rr.(*dns.AAAA))
 	case dns.TypeCNAME:
-		return r.FromCNAME(rr.(*dns.CNAME), domainID)
+		return r.FromCNAME(rr.(*dns.CNAME))
 	default:
 		return Record{}
 	}
 }
 
-func (r *Record) FromA(a *dns.A, domainID uint) Record {
+func (r *Record) FromA(a *dns.A) Record {
 	return Record{
-		DomainID:  domainID,
+		Domain:    a.Header().Name,
 		Type:      dns.TypeA,
 		Value:     a.A.String(),
 		TTL:       int(a.Hdr.Ttl),
@@ -48,9 +48,9 @@ func (r *Record) FromA(a *dns.A, domainID uint) Record {
 	}
 }
 
-func (r *Record) FromAAAA(aaaa *dns.AAAA, domainID uint) Record {
+func (r *Record) FromAAAA(aaaa *dns.AAAA) Record {
 	return Record{
-		DomainID:  domainID,
+		Domain:    aaaa.Header().Name,
 		Type:      dns.TypeAAAA,
 		Value:     aaaa.AAAA.String(),
 		TTL:       int(aaaa.Hdr.Ttl),
@@ -58,9 +58,9 @@ func (r *Record) FromAAAA(aaaa *dns.AAAA, domainID uint) Record {
 	}
 }
 
-func (r *Record) FromCNAME(cname *dns.CNAME, domainID uint) Record {
+func (r *Record) FromCNAME(cname *dns.CNAME) Record {
 	return Record{
-		DomainID:  domainID,
+		Domain:    cname.Header().Name,
 		Type:      dns.TypeCNAME,
 		Value:     cname.Target,
 		TTL:       int(cname.Hdr.Ttl),
@@ -73,23 +73,23 @@ func calculateExpiresAt(ttl int) *time.Time {
 	return &expiresAt
 }
 
-func (r *Record) ToRR(domainName string) dns.RR {
+func (r *Record) ToRR() dns.RR {
 	switch r.Type {
 	case dns.TypeA:
-		return r.toA(domainName)
+		return r.toA()
 	case dns.TypeAAAA:
-		return r.toAAAA(domainName)
+		return r.toAAAA()
 	case dns.TypeCNAME:
-		return r.toCNAME(domainName)
+		return r.toCNAME()
 	default:
 		return nil
 	}
 }
 
-func (r *Record) toA(domainName string) *dns.A {
+func (r *Record) toA() *dns.A {
 	return &dns.A{
 		Hdr: dns.RR_Header{
-			Name:   domainName,
+			Name:   r.Domain,
 			Rrtype: dns.TypeA,
 			Class:  dns.ClassINET,
 			Ttl:    uint32(r.TTL),
@@ -98,10 +98,10 @@ func (r *Record) toA(domainName string) *dns.A {
 	}
 }
 
-func (r *Record) toAAAA(domainName string) *dns.AAAA {
+func (r *Record) toAAAA() *dns.AAAA {
 	return &dns.AAAA{
 		Hdr: dns.RR_Header{
-			Name:   domainName,
+			Name:   r.Domain,
 			Rrtype: dns.TypeAAAA,
 			Class:  dns.ClassINET,
 			Ttl:    uint32(r.TTL),
@@ -110,10 +110,10 @@ func (r *Record) toAAAA(domainName string) *dns.AAAA {
 	}
 }
 
-func (r *Record) toCNAME(domainName string) *dns.CNAME {
+func (r *Record) toCNAME() *dns.CNAME {
 	return &dns.CNAME{
 		Hdr: dns.RR_Header{
-			Name:   domainName,
+			Name:   r.Domain,
 			Rrtype: dns.TypeCNAME,
 			Class:  dns.ClassINET,
 			Ttl:    uint32(r.TTL),

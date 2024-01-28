@@ -27,9 +27,11 @@ func createNewDatabase() *gorm.DB {
 		log.Fatalf("Failed to create database: %v", err)
 	}
 
-	if err := db.AutoMigrate(&models.Domain{}, &models.Record{}); err != nil {
+	if err := db.AutoMigrate(&models.Record{}); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
+
+	go housekeeping(db, 10)
 
 	return db
 }
