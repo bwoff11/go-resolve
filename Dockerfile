@@ -10,7 +10,7 @@ RUN CGO_ENABLED=0 go build -o ./main
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 
 # Final stage
-FROM scratch
+FROM ubuntu:latest
 
 # Copy the built binary and ca-certificates
 WORKDIR /app
