@@ -2,10 +2,12 @@ package resolver
 
 import (
 	"net"
+	"time"
 
 	"github.com/bwoff11/go-resolve/internal/blocklist"
 	"github.com/bwoff11/go-resolve/internal/cache"
 	"github.com/bwoff11/go-resolve/internal/config"
+	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/bwoff11/go-resolve/internal/upstream"
 	"github.com/miekg/dns"
 )
@@ -28,13 +30,9 @@ func New(cfg *config.Config) *Resolver {
 
 // Resolve processes the DNS query and returns a response.
 func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
+	startTime := time.Now()
 
 	qName := req.Question[0].Name
-	//qType := req.Question[0].Qtype
-
-	//lCache := r.Cache.LocalRecords
-	//wCache := r.Cache.WildcardRecords
-	//rCache := r.Cache.RemoteRecords
 
 	// Check block list
 	if block := r.BlockList.Query(qName); block != nil {
@@ -52,6 +50,7 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 		return r.createResponse(req, records, false), nil
 	}
 
+	metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
 	return r.createResponse(req, []dns.RR{}, false), nil // Need to verify this is correct for NXDOMAIN
 }
 
