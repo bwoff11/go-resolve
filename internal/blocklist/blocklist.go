@@ -1,6 +1,11 @@
 package blocklist
 
-import "github.com/bwoff11/go-resolve/internal/config"
+import (
+	"time"
+
+	"github.com/bwoff11/go-resolve/internal/config"
+	"github.com/bwoff11/go-resolve/internal/metrics"
+)
 
 // BlockList holds a list of blocked domains with reasons and categories.
 type BlockList struct {
@@ -31,10 +36,12 @@ func (bl *BlockList) AddBlock(block Block) {
 
 // Query finds if a domain is in the blocklist and returns the corresponding block entry.
 func (bl *BlockList) Query(domain string) *Block {
+	startTime := time.Now()
 	for _, block := range bl.Blocks {
 		if block.Domain+"." == domain {
 			return &block
 		}
 	}
+	metrics.BlocklistDuration.Observe(time.Since(startTime).Seconds())
 	return nil
 }

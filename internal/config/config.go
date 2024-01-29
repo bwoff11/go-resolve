@@ -57,7 +57,7 @@ func Load() (*Config, error) {
 
 	// Set the file name of the configurations file
 	v.SetConfigName("config")
-	v.SetConfigType("yaml")
+	v.SetConfigType("yml")
 
 	// Add the path to look for the configurations file
 	v.AddConfigPath("/etc/go-resolve/")

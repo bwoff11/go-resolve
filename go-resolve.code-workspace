@@ -4,9 +4,6 @@
 			"path": "."
 		},
 		{
-			"path": "../../../../etc/go-resolve"
-		},
-		{
 			"path": "../blocklists"
 		}
 	],

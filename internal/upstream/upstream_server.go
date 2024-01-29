@@ -3,7 +3,9 @@ package upstream
 import (
 	"fmt"
 	"net"
+	"time"
 
+	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
 )
@@ -39,6 +41,7 @@ func NewUpstreamServer(host string, port int, timeout int) *UpstreamServer {
 
 // Query sends the given DNS query message to the upstream DNS server and returns the response.
 func (us *UpstreamServer) Query(msg *dns.Msg) []dns.RR {
+	startTime := time.Now()
 	resp, _, err := us.Client.Exchange(msg, us.Address)
 	if err != nil {
 		log.Error().
@@ -49,5 +52,6 @@ func (us *UpstreamServer) Query(msg *dns.Msg) []dns.RR {
 		return nil
 	}
 
+	metrics.UpstreamDuration.Observe(time.Since(startTime).Seconds())
 	return resp.Answer
 }

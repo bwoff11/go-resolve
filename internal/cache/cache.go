@@ -6,6 +6,7 @@ import (
 
 	"github.com/bwoff11/go-resolve/internal/common"
 	"github.com/bwoff11/go-resolve/internal/config"
+	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/miekg/dns"
 	"github.com/patrickmn/go-cache"
 	"github.com/rs/zerolog/log"
@@ -50,6 +51,7 @@ func (c *Cache) AddLocalRecord(lr []common.LocalRecord) error {
 }
 
 func (c *Cache) Query(questions []dns.Question) []dns.RR {
+	startTime := time.Now()
 	log.Debug().Str("questions", fmt.Sprintf("%v", questions)).Msg("Querying cache")
 	var records []dns.RR
 
@@ -83,6 +85,8 @@ func (c *Cache) Query(questions []dns.Question) []dns.RR {
 	if len(records) == 0 {
 		log.Debug().Msg("No records found in cache")
 	}
+
+	metrics.CacheDuration.Observe(time.Since(startTime).Seconds())
 	return records
 }
 
