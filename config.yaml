@@ -64,14 +64,6 @@ dns:
         type: "CNAME"
         value: "example.com"
         ttl: 3600
-      - domain: "*.example.com"
-        type: "A"
-        value: "example.com"
-        ttl: 3600
-      - domain: "*.example.net"
-        type: "CNAME"
-        value: "redirect.example.net"
-        ttl: 3600
 
 # --- Unimplemented ---
 
