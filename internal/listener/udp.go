@@ -4,8 +4,10 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/bwoff11/go-resolve/internal/config"
+	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/bwoff11/go-resolve/internal/resolver"
 	"github.com/miekg/dns"
 )
@@ -45,6 +47,7 @@ func handleUDPConnections(conn net.PacketConn, res *resolver.Resolver) {
 
 // processUDPQuery processes a single UDP query and sends back a response.
 func processUDPQuery(query []byte, conn net.PacketConn, addr net.Addr, res *resolver.Resolver) {
+	startTime := time.Now()
 	var req dns.Msg
 	if err := req.Unpack(query); err != nil {
 		log.Printf("Error unpacking DNS query: %v", err)
@@ -66,4 +69,6 @@ func processUDPQuery(query []byte, conn net.PacketConn, addr net.Addr, res *reso
 	if _, err := conn.WriteTo(respBytes, addr); err != nil {
 		log.Printf("Error sending DNS response: %v", err)
 	}
+
+	metrics.RequestDuration.WithLabelValues("udp").Observe(time.Since(startTime).Seconds())
 }

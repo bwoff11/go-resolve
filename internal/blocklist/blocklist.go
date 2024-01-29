@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/metrics"
+	"github.com/rs/zerolog/log"
 )
 
 // BlockList holds a list of blocked domains with reasons and categories.
@@ -39,9 +40,11 @@ func (bl *BlockList) Query(domain string) *Block {
 	startTime := time.Now()
 	for _, block := range bl.Blocks {
 		if block.Domain+"." == domain {
+			log.Debug().Str("domain", domain).Msg("Domain blocked")
 			return &block
 		}
 	}
+	log.Debug().Str("domain", domain).Msg("Domain not blocked")
 	metrics.BlocklistDuration.Observe(time.Since(startTime).Seconds())
 	return nil
 }

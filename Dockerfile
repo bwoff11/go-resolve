@@ -18,7 +18,7 @@ COPY --from=builder /build/main ./main
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Copy the configuration file
-COPY ./config.yaml ./config.yaml
+COPY ./config.yml ./config.yml
 
 # Set the port and entrypoint
 EXPOSE 1053

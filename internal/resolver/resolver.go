@@ -10,6 +10,7 @@ import (
 	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/bwoff11/go-resolve/internal/upstream"
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 )
 
 type Resolver struct {
@@ -36,21 +37,24 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 
 	// Check block list
 	if block := r.BlockList.Query(qName); block != nil {
+		metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
 		return r.blockedResponse(req), nil
 	}
 
 	// Check cache
 	if records := r.Cache.Query(req.Question); len(records) > 0 {
+		metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
 		return r.createResponse(req, records, true), nil
 	}
 
 	// Check upstream
 	if records := r.Upstream.Query(req); len(records) > 0 {
 		r.Cache.Add(records)
+		metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
 		return r.createResponse(req, records, false), nil
 	}
 
-	metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
+	log.Info().Str("domain", qName).Msg("Domain not found in cache or upstream")
 	return r.createResponse(req, []dns.RR{}, false), nil // Need to verify this is correct for NXDOMAIN
 }
 

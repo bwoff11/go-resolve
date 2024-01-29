@@ -42,6 +42,15 @@ var (
 		},
 	)
 
+	RequestDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "dns_request_duration",
+			Help:    "Duration of request starting from networking layer to response.",
+			Buckets: []float64{0.01, 0.1, 0.25},
+		},
+		[]string{"protocol"},
+	)
+
 	ResolutionDuration = prometheus.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "dns_resolution_duration",
@@ -61,5 +70,5 @@ var (
 
 func init() {
 	// Register custom metrics with Prometheus
-	prometheus.MustRegister(TotalQueries, CacheHits, CacheMisses, BlocklistDuration, UpstreamDuration, CacheDuration, ResolutionDuration)
+	prometheus.MustRegister(TotalQueries, CacheHits, CacheMisses, BlocklistDuration, UpstreamDuration, CacheDuration, ResolutionDuration, RequestDuration)
 }
