@@ -55,7 +55,7 @@ func (c *Cache) Query(q dns.Question) []dns.RR {
 	defer c.mutex.RUnlock()
 
 	for _, record := range c.Records {
-		if record.Question.Name == q.Name && record.Question.Qtype == q.Qtype || record.Question.Qtype == dns.TypeCNAME {
+		if record.Question.Name == q.Name && (record.Question.Qtype == q.Qtype || record.Question.Qtype == dns.TypeCNAME) {
 			log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("Found record in cache")
 			metrics.CacheHits.Inc()
 			return record.Answer
