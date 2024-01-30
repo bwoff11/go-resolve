@@ -33,34 +33,32 @@ func New(cfg *config.Config) *Resolver {
 func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 	startTime := time.Now()
 
+	q := req.Question[0] // Only support one question
 	qName := req.Question[0].Name
 
 	// Check block list
 	if block := r.BlockList.Query(qName); block != nil {
-		metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
-		return r.blockedResponse(req), nil
+		return r.blockedResponse(req, startTime), nil
 	}
 
 	// Check cache
-	if records := r.Cache.Query(req.Question); len(records) > 0 {
-		metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
-		return r.createResponse(req, records, true), nil
+	if records := r.Cache.Query(q); len(records) > 0 {
+		return r.createResponse(req, records, true, startTime), nil
 	}
 
 	// Check upstream
 	if records := r.Upstream.Query(req); len(records) > 0 {
-		r.Cache.Add(records)
-		metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
-		return r.createResponse(req, records, false), nil
+		r.Cache.AddRecords(q, records)
+		return r.createResponse(req, records, false, startTime), nil
 	}
 
 	log.Info().Str("domain", qName).Msg("Domain not found in cache or upstream")
-	return r.createResponse(req, []dns.RR{}, false), nil // Need to verify this is correct for NXDOMAIN
+	return r.createResponse(req, []dns.RR{}, false, startTime), nil // Need to verify this is correct for NXDOMAIN
 }
 
 // createResponse builds a DNS response message.
-func (r *Resolver) createResponse(req *dns.Msg, answer []dns.RR, authoritative bool) *dns.Msg {
-	return &dns.Msg{
+func (r *Resolver) createResponse(req *dns.Msg, answer []dns.RR, authoritative bool, startTime time.Time) *dns.Msg {
+	msg := &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Id:                 req.Id,
 			Response:           true,
@@ -77,9 +75,11 @@ func (r *Resolver) createResponse(req *dns.Msg, answer []dns.RR, authoritative b
 		Ns:       []dns.RR{}, // Implement if needed
 		Extra:    []dns.RR{}, // Implement if needed
 	}
+	metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
+	return msg
 }
 
-func (r *Resolver) blockedResponse(req *dns.Msg) *dns.Msg {
+func (r *Resolver) blockedResponse(req *dns.Msg, startTime time.Time) *dns.Msg {
 	var answer []dns.RR
 	switch req.Question[0].Qtype {
 	case dns.TypeA:
@@ -116,5 +116,5 @@ func (r *Resolver) blockedResponse(req *dns.Msg) *dns.Msg {
 		answer = []dns.RR{}
 	}
 
-	return r.createResponse(req, answer, true)
+	return r.createResponse(req, answer, true, startTime)
 }
