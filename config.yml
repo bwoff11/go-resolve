@@ -6,8 +6,8 @@ blockLists:
 
 cache:
   enabled: true
-  prune_interval: 60
-  local_records:
+  pruneInterval: 60
+  localRecords:
     - domain: "example.com"
       type: "A"
       value: "1.2.3.4"
