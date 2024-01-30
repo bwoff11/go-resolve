@@ -38,10 +38,12 @@ func (c *Cache) Add(q dns.Question, records []dns.RR) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
+	ttl := time.Duration(records[0].Header().Ttl) * time.Second
+
 	c.Records = append(c.Records, Record{
 		Question: q,
 		Answer:   records,
-		Expiry:   time.Now().Add(5 * time.Second),
+		Expiry:   time.Now().Add(ttl),
 	})
 }
 

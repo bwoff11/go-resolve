@@ -44,7 +44,6 @@ func (bl *BlockList) Query(domain string) *Block {
 			return &block
 		}
 	}
-	log.Debug().Str("domain", domain).Msg("Domain not blocked")
 	metrics.BlocklistDuration.Observe(time.Since(startTime).Seconds())
 	return nil
 }
