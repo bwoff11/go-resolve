@@ -19,7 +19,7 @@ const (
 // CreateUDPListener starts a UDP DNS listener on the specified port.
 func CreateUDPListener(config *config.Config, resolver *resolver.Resolver) {
 
-	addr := net.JoinHostPort("", strconv.Itoa(config.DNS.Protocols.UDP.Port))
+	addr := net.JoinHostPort("", strconv.Itoa(config.Protocols.UDP.Port))
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error creating UDP listener")

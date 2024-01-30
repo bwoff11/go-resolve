@@ -3,7 +3,6 @@ package blocklist
 import (
 	"time"
 
-	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/rs/zerolog/log"
 )
@@ -21,11 +20,11 @@ type Block struct {
 }
 
 // New creates a new BlockList.
-func New(cfg config.BlockListConfig) *BlockList {
+func New(blocklists []string) *BlockList {
 	bl := &BlockList{}
 
-	bl.loadLocalBlockLists(cfg.Local)
-	bl.loadRemoteBlockLists(cfg.Remote)
+	//bl.loadLocalBlockLists(cfg.Local)
+	//bl.loadRemoteBlockLists(cfg.Remote)
 
 	return bl
 }

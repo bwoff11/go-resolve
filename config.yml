@@ -1,86 +1,53 @@
+blockLists:
+  #- https://raw.githubusercontent.com/bwoff11/blocklists/main/ads.yml
+  #- https://raw.githubusercontent.com/bwoff11/blocklists/main/malware.yml
+  #- https://raw.githubusercontent.com/bwoff11/blocklists/main/other.yml
+  #- https://raw.githubusercontent.com/bwoff11/blocklists/main/tracking.yml
+
+cache:
+  enabled: true
+  prune_interval: 60
+  local_records:
+    - domain: "example.com"
+      type: "A"
+      value: "1.2.3.4"
+      ttl: 3600
+    - domain: "example.net"
+      type: "AAAA"
+      value: "2001:db8::1"
+      ttl: 3600
+    - domain: "www.example.com"
+      type: "CNAME"
+      value: "example.com"
+      ttl: 3600
+
 metrics:
   enabled: true
   route: "/metrics"
   port: 9091
 
-dns:
-  TTL: 3600
-  maxMessageSize: 4096
-
-  blockList:
-    local:
-      #- path/to/blocklist1
-      #- path/to/blocklist2
-    remote:
-      #- https://raw.githubusercontent.com/bwoff11/blocklists/main/ads.yml
-      #- https://raw.githubusercontent.com/bwoff11/blocklists/main/malware.yml
-      #- https://raw.githubusercontent.com/bwoff11/blocklists/main/other.yml
-      #- https://raw.githubusercontent.com/bwoff11/blocklists/main/tracking.yml
-
-  cache:
+protocols:
+  udp:
     enabled: true
-    # Potentially add purge time and interval in the future
-    # Need setting to also respect TTLs of upstream servers
-
-  upstream:
+    port: 1053
+  tcp:
     enabled: true
-    strategy: "random" # Options: random, roundRobin, sequential, latency
-    servers:
-    - name: "Google"
-      ip: "8.8.8.8"
-      port: 53
-      timeout: 5
-    - name: "Cloudflare"
-      ip: "1.1.1.1"
-      port: 53
-      timeout: 5
-
-  protocols:
-    udp:
-      enabled: true
-      port: 1053
-    tcp:
-      enabled: true
-      port: 1053
-    dot:
-      enabled: false
-      port: 853
-      tlsCertFile: "path/to/dns_cert.pem"
-      tlsKeyFile: "path/to/dns_key.pem"
-      strictSNI: false # Enforce strict Server Name Indication checking
-
-  local:
-    enabled: true
-    records:
-      - domain: "example.com"
-        type: "A"
-        value: "1.2.3.4"
-        ttl: 3600
-      - domain: "example.net"
-        type: "AAAA"
-        value: "2001:db8::1"
-        ttl: 3600
-      - domain: "www.example.com"
-        type: "CNAME"
-        value: "example.com"
-        ttl: 3600
-
-# --- Unimplemented ---
-
-  rateLimiting:
+    port: 1053
+  dot:
     enabled: false
-    requestsPerSecond: 10
-    burstSize: 20 # Maximum number of requests that can be allowed in a burst
+    port: 853
+    tlsCertFile: "path/to/dns_cert.pem"
+    tlsKeyFile: "path/to/dns_key.pem"
+    strictSNI: false
 
-web:
-  enabled: true
-  port: 8080
-  tls:
-    enabled: false
-    certFile: "path/to/cert.pem"
-    keyFile: "path/to/key.pem"
-
-logging:
-  level: "info"
-  output: "stdout" # Options: stdout, file
-  filePath: "path/to/logfile" # If output is file
+upstream:
+  strategy: "random" # Options: random, roundRobin, sequential, latency
+  servers:
+  - name: "Google"
+    ip: "8.8.8.8"
+    port: 53
+    timeout: 5
+  - name: "Cloudflare"
+    ip: "1.1.1.1"
+    port: 53
+    timeout: 5

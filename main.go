@@ -28,10 +28,10 @@ func startListeners(config *config.Config) {
 	// Create shared resolver
 	resolver := resolver.New(config)
 
-	if config.DNS.Protocols.UDP.Enabled {
+	if config.Protocols.UDP.Enabled {
 		go listener.CreateUDPListener(config, resolver)
 	}
-	if config.DNS.Protocols.TCP.Enabled {
+	if config.Protocols.TCP.Enabled {
 		go listener.CreateTCPListener(config, resolver)
 	}
 	//if cfg.DNS.Protocols.DOT.Enabled {
@@ -39,7 +39,7 @@ func startListeners(config *config.Config) {
 	//}
 }
 
-func startMetricsServer(cfg config.MetricsConfig) {
+func startMetricsServer(cfg config.Metrics) {
 	http.Handle(cfg.Route, promhttp.Handler())
 	go func() {
 		log.Println("Starting Prometheus metrics server on port 9090")

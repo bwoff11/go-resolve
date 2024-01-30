@@ -6,14 +6,8 @@ import (
 
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 )
-
-/*
-	The cache is responsible for storing local and remote DNS records.
-
-	Questions (keys) consist of a domain name and record type.
-	Answers (values) consist of a slice of DNS resource records.
-*/
 
 type Cache struct {
 	mutex   sync.RWMutex
@@ -26,7 +20,7 @@ type Record struct {
 	Expiry   time.Time
 }
 
-func New(cfg config.LocalConfig) *Cache {
+func New(cfg config.Cache) *Cache {
 	c := &Cache{}
 
 	purgeInterval := 1 * time.Second
@@ -45,6 +39,7 @@ func (c *Cache) Add(q dns.Question, records []dns.RR) {
 		Answer:   records,
 		Expiry:   time.Now().Add(ttl),
 	})
+	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("Added record to cache")
 }
 
 func (c *Cache) Query(q dns.Question) []dns.RR {
@@ -53,6 +48,7 @@ func (c *Cache) Query(q dns.Question) []dns.RR {
 
 	for _, record := range c.Records {
 		if record.Question.Name == q.Name && record.Question.Qtype == q.Qtype {
+			log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("Found record in cache")
 			return record.Answer
 		}
 	}

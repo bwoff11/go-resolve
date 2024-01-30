@@ -15,7 +15,7 @@ import (
 
 type Resolver struct {
 	Upstream  *upstream.Upstream
-	Strategy  config.LoadBalancingStrategy
+	Strategy  config.Strategy
 	Cache     *cache.Cache
 	BlockList *blocklist.BlockList
 }
@@ -23,14 +23,15 @@ type Resolver struct {
 // New creates a new Resolver instance.
 func New(cfg *config.Config) *Resolver {
 	return &Resolver{
-		Upstream:  upstream.New(cfg.DNS.Upstream),
-		Cache:     cache.New(cfg.DNS.Local),
-		BlockList: blocklist.New(cfg.DNS.BlockList),
+		Upstream:  upstream.New(cfg.Upstream),
+		Cache:     cache.New(cfg.Cache),
+		BlockList: blocklist.New(cfg.BlockLists),
 	}
 }
 
 // Resolve processes the DNS query and returns a response.
 func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
+	log.Debug().Str("domain", req.Question[0].Name).Msg("Resolving domain")
 	startTime := time.Now()
 
 	q := req.Question[0] // Only support one question

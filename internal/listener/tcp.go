@@ -16,7 +16,7 @@ import (
 func CreateTCPListener(config *config.Config, resolver *resolver.Resolver) {
 
 	// Create TCP listener
-	addr := net.JoinHostPort("", strconv.Itoa(config.DNS.Protocols.TCP.Port))
+	addr := net.JoinHostPort("", strconv.Itoa(config.Protocols.TCP.Port))
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error creating TCP listener")

@@ -7,48 +7,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-type ProtocolType string
-type LoadBalancingStrategy string
-
-const (
-	ProtocolTypeDOT ProtocolType = "dot"
-	ProtocolTypeUDP ProtocolType = "udp"
-	ProtocolTypeTCP ProtocolType = "tcp"
-
-	LoadBalancingStrategyRandom     LoadBalancingStrategy = "random"
-	LoadBalancingStrategyRoundRobin LoadBalancingStrategy = "roundRobin"
-	LoadBalancingStrategyLatency    LoadBalancingStrategy = "latency"
-)
-
 type Config struct {
-	Web     WebConfig     `yaml:"web"`
-	Logging LoggingConfig `yaml:"logging"`
-	DNS     DNSConfig     `yaml:"dns"`
-	Metrics MetricsConfig `yaml:"metrics"`
-}
-
-type WebConfig struct {
-	Enabled bool         `yaml:"enabled"`
-	Port    int          `yaml:"port"`
-	TLS     WebTLSConfig `yaml:"tls"`
-}
-
-type WebTLSConfig struct {
-	Enabled  bool   `yaml:"enabled"`
-	CertFile string `yaml:"certFile"`
-	KeyFile  string `yaml:"keyFile"`
-}
-
-type LoggingConfig struct {
-	Level    string `yaml:"level"`
-	Output   string `yaml:"output"`
-	FilePath string `yaml:"filePath"`
-}
-
-type MetricsConfig struct {
-	Enabled bool   `yaml:"enabled"`
-	Route   string `yaml:"route"`
-	Port    int    `yaml:"port"`
+	BlockLists []string  `yaml:"blockLists"`
+	Cache      Cache     `yaml:"cache"`
+	Metrics    Metrics   `yaml:"metrics"`
+	Protocols  Protocols `yaml:"protocols"`
+	Upstream   Upstream  `yaml:"upstream"`
 }
 
 // Load reads the configuration file and unmarshals it into the Config struct.

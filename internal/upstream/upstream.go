@@ -6,11 +6,11 @@ import (
 )
 
 type Upstream struct {
-	Servers  []*UpstreamServer            `yaml:"upstreams"`
-	Strategy config.LoadBalancingStrategy `yaml:"strategy"`
+	Servers  []*UpstreamServer `yaml:"upstreams"`
+	Strategy config.Strategy   `yaml:"strategy"`
 }
 
-func New(cfg config.UpstreamConfig) *Upstream {
+func New(cfg config.Upstream) *Upstream {
 
 	// Create upstream servers
 	var servers []*UpstreamServer
@@ -32,10 +32,14 @@ func (u *Upstream) Query(msg *dns.Msg) []dns.RR {
 
 func (u *Upstream) selectServer() *UpstreamServer {
 	switch u.Strategy {
-	case config.LoadBalancingStrategyRandom:
+	case config.StrategyRandom:
 		return u.randomServer()
-	case config.LoadBalancingStrategyRoundRobin:
+	case config.StrategyRoundRobin:
 		return u.roundRobinServer()
+	case config.StrategyLatency:
+		return u.latencyServer()
+	case config.StrategySequential:
+		return u.sequentialServer()
 	default:
 		return u.randomServer()
 	}
@@ -47,6 +51,16 @@ func (u *Upstream) randomServer() *UpstreamServer {
 }
 
 func (u *Upstream) roundRobinServer() *UpstreamServer {
+	// Unimplemented
+	return u.Servers[0]
+}
+
+func (u *Upstream) latencyServer() *UpstreamServer {
+	// Unimplemented
+	return u.Servers[0]
+}
+
+func (u *Upstream) sequentialServer() *UpstreamServer {
 	// Unimplemented
 	return u.Servers[0]
 }
