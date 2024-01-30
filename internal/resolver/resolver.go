@@ -79,7 +79,7 @@ func (r *Resolver) createResponse(req *dns.Msg, answer []dns.RR, authoritative b
 	log.Debug().
 		Str("domain", req.Question[0].Name).
 		Str("type", dns.TypeToString[req.Question[0].Qtype]).
-		Str("answer", answer[0].String()).
+		//Str("answer", answer[0].String()). //possibly nil
 		Msg("Created response")
 	metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
 	return msg

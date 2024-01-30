@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
 )
@@ -38,14 +39,15 @@ func NewUpstreamServer(host string, port int, timeout int) *UpstreamServer {
 
 // Query sends the given DNS query message to the upstream DNS server and returns the response.
 func (us *UpstreamServer) Query(msg *dns.Msg) []dns.RR {
-	//startTime := time.Now()
+	startTime := time.Now()
 
 	client := &dns.Client{
 		Net:     "udp",
 		Timeout: time.Duration(us.Timeout) * time.Second,
 	}
 
-	resp, _, err := client.Exchange(msg, us.Address)
+	resp, rtt, err := client.Exchange(msg, us.Address)
+	metrics.UpstreamRTT.WithLabelValues(us.Address).Observe(rtt.Seconds())
 	if err != nil {
 		log.Error().Str("msg", "Failed to query upstream DNS server").Str("address", us.Address).Err(err).Send()
 		return nil
@@ -58,6 +60,6 @@ func (us *UpstreamServer) Query(msg *dns.Msg) []dns.RR {
 		}
 	}
 
-	//metrics.UpstreamDuration.Observe(time.Since(startTime).Seconds())
+	metrics.UpstreamDuration.Observe(time.Since(startTime).Seconds())
 	return resp.Answer
 }

@@ -83,10 +83,18 @@ var (
 		},
 	)
 
-	UpstreamDuration = prometheus.NewHistogramVec(
+	UpstreamDuration = prometheus.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "upstream_duration",
 			Help:    "Time taken to query upstream DNS server.",
+			Buckets: []float64{0.01, 0.02, 0.03, 0.04, 0.05},
+		},
+	)
+
+	UpstreamRTT = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "upstream_rtt",
+			Help:    "Round trip time to upstream DNS server.",
 			Buckets: []float64{0.01, 0.02, 0.03, 0.04, 0.05},
 		},
 		[]string{"server"},
@@ -105,5 +113,6 @@ func init() {
 		ResolutionDuration,
 		TotalQueries,
 		UpstreamDuration,
+		UpstreamRTT,
 	)
 }

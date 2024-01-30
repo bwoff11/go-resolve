@@ -24,11 +24,6 @@ type Record struct {
 func New(cfg config.Cache) *Cache {
 	c := &Cache{}
 	log.Debug().Msg("Initializing cache")
-	for _, lr := range cfg.LocalRecords {
-		q := lr.ToQuestion()
-		a := lr.ToAnswer()
-		c.Add(q, a)
-	}
 
 	purgeInterval := 1 * time.Second
 	c.StartHousekeeper(purgeInterval)
