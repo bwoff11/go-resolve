@@ -1,11 +1,11 @@
 package cache
 
 import (
+	"sync"
 	"time"
 
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/miekg/dns"
-	"github.com/rs/zerolog/log"
 )
 
 /*
@@ -16,55 +16,43 @@ import (
 */
 
 type Cache struct {
-	DomainRecords []DomainRecord
-	CNAMERecords  []CNAMERecord
+	mutex   sync.RWMutex
+	Records []Record
+}
+
+type Record struct {
+	Question dns.Question
+	Answer   []dns.RR
+	Expiry   time.Time
 }
 
 func New(cfg config.LocalConfig) *Cache {
-	c := &Cache{
-		DomainRecords: []DomainRecord{},
-		CNAMERecords:  []CNAMERecord{},
-	}
+	c := &Cache{}
 
 	purgeInterval := 1 * time.Second
 	c.StartHousekeeper(purgeInterval)
 	return c
 }
 
-// AddRecords accepts one question, and a slice of resource records.
-// The RRs are divided into CNAME and domain records, then added to
-// their respective caches.
-func (c *Cache) AddRecords(q dns.Question, rs []dns.RR) {
-	for _, r := range rs {
-		switch r.Header().Rrtype {
-		case dns.TypeCNAME:
-			if cr, ok := r.(*dns.CNAME); ok {
-				c.addCNAME(q, cr)
-			} else {
-				log.Error().Msg("Failed to cast RR to CNAME")
-			}
-		default:
-			c.addDomain(q, r)
+func (c *Cache) Add(q dns.Question, records []dns.RR) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.Records = append(c.Records, Record{
+		Question: q,
+		Answer:   records,
+		Expiry:   time.Now().Add(5 * time.Second),
+	})
+}
+
+func (c *Cache) Query(q dns.Question) []dns.RR {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	for _, record := range c.Records {
+		if record.Question.Name == q.Name && record.Question.Qtype == q.Qtype {
+			return record.Answer
 		}
 	}
-}
-
-// addCNAME adds a CNAME record to the cache.
-func (c *Cache) addCNAME(q dns.Question, r dns.RR) {
-	c.CNAMERecords = append(c.CNAMERecords, CNAMERecord{
-		Question:  q,
-		ExpiresAt: time.Now().Add(time.Duration(r.Header().Ttl) * time.Second),
-		Record:    *r.(*dns.CNAME),
-	})
-	log.Debug().Str("domain", q.Name).Str("target", r.(*dns.CNAME).Target).Msg("Added CNAME record to cache")
-}
-
-// addDomain adds a domain record to the cache.
-func (c *Cache) addDomain(q dns.Question, r dns.RR) {
-	c.DomainRecords = append(c.DomainRecords, DomainRecord{
-		Question:  q,
-		ExpiresAt: time.Now().Add(time.Duration(r.Header().Ttl) * time.Second),
-		Records:   []dns.RR{r},
-	})
-	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[r.Header().Rrtype]).Msg("Added domain record to cache")
+	return []dns.RR{}
 }

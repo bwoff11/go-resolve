@@ -48,7 +48,7 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 
 	// Check upstream
 	if records := r.Upstream.Query(req); len(records) > 0 {
-		r.Cache.AddRecords(q, records)
+		r.Cache.Add(q, records)
 		return r.createResponse(req, records, false, startTime), nil
 	}
 
