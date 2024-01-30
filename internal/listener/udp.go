@@ -1,7 +1,6 @@
 package listener
 
 import (
-	"log"
 	"net"
 	"strconv"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/bwoff11/go-resolve/internal/resolver"
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -22,11 +22,11 @@ func CreateUDPListener(config *config.Config, resolver *resolver.Resolver) {
 	addr := net.JoinHostPort("", strconv.Itoa(config.DNS.Protocols.UDP.Port))
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
-		log.Fatalf("Failed to start UDP listener on %s: %v", addr, err)
+		log.Fatal().Err(err).Msg("Error creating UDP listener")
 	}
 	defer conn.Close()
 
-	log.Printf("UDP listener started on %s", addr)
+	log.Debug().Str("protocol", "udp").Str("address", addr).Msg("Listening")
 	handleUDPConnections(conn, resolver)
 }
 
@@ -37,7 +37,7 @@ func handleUDPConnections(conn net.PacketConn, res *resolver.Resolver) {
 	for {
 		n, clientAddr, err := conn.ReadFrom(buf)
 		if err != nil {
-			log.Printf("Error reading UDP data: %v", err)
+			log.Error().Err(err).Str("protocol", "udp").Msg("Error reading UDP packet")
 			continue
 		}
 
@@ -50,24 +50,25 @@ func processUDPQuery(query []byte, conn net.PacketConn, addr net.Addr, res *reso
 	startTime := time.Now()
 	var req dns.Msg
 	if err := req.Unpack(query); err != nil {
-		log.Printf("Error unpacking DNS query: %v", err)
+		log.Error().Err(err).Str("protocol", "udp").Msg("Error unpacking DNS query")
 		return
 	}
 
 	resp, err := res.Resolve(&req)
 	if err != nil {
-		log.Printf("Error resolving DNS query: %v", err)
+		log.Error().Err(err).Str("protocol", "udp").Msg("Error resolving DNS query")
 		return
 	}
 
 	respBytes, err := resp.Pack()
 	if err != nil {
-		log.Printf("Error packing DNS response: %v", err)
+		log.Error().Err(err).Str("protocol", "udp").Msg("Error packing DNS response")
 		return
 	}
 
 	if _, err := conn.WriteTo(respBytes, addr); err != nil {
-		log.Printf("Error sending DNS response: %v", err)
+		log.Error().Err(err).Str("protocol", "udp").Msg("Error sending DNS response")
+		return
 	}
 
 	metrics.RequestDuration.WithLabelValues("udp").Observe(time.Since(startTime).Seconds())

@@ -3,13 +3,13 @@ package listener
 import (
 	"encoding/binary"
 	"io"
-	"log"
 	"net"
 	"strconv"
 
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/resolver"
 	"github.com/miekg/dns"
+	"github.com/rs/zerolog/log"
 )
 
 // CreateTCPListener starts a TCP DNS listener on the specified port.
@@ -19,11 +19,11 @@ func CreateTCPListener(config *config.Config, resolver *resolver.Resolver) {
 	addr := net.JoinHostPort("", strconv.Itoa(config.DNS.Protocols.TCP.Port))
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatalf("Failed to start TCP listener on %s: %v", addr, err)
+		log.Fatal().Err(err).Msg("Error creating TCP listener")
 	}
 	defer listener.Close()
 
-	log.Printf("TCP listener started on %s", addr)
+	log.Debug().Str("protocol", "tcp").Str("address", addr).Msg("Listening")
 
 	// Accept connections
 	for {
@@ -44,26 +44,26 @@ func handleTCPConnection(conn net.Conn, res *resolver.Resolver) {
 func processTCPConnection(conn net.Conn, res *resolver.Resolver) {
 	lenBuf := make([]byte, 2)
 	if _, err := io.ReadFull(conn, lenBuf); err != nil {
-		log.Printf("Error reading length: %v", err)
+		log.Error().Err(err).Str("protocol", "tcp").Msg("Error reading length")
 		return
 	}
 	length := binary.BigEndian.Uint16(lenBuf)
 
 	msgBuf := make([]byte, length)
 	if _, err := io.ReadFull(conn, msgBuf); err != nil {
-		log.Printf("Error reading message: %v", err)
+		log.Error().Err(err).Str("protocol", "tcp").Msg("Error reading message")
 		return
 	}
 
 	var req dns.Msg
 	if err := req.Unpack(msgBuf); err != nil {
-		log.Printf("Error unpacking DNS query: %v", err)
+		log.Error().Err(err).Str("protocol", "tcp").Msg("Error unpacking DNS message")
 		return
 	}
 
 	resp, err := res.Resolve(&req)
 	if err != nil {
-		log.Printf("Error resolving DNS query: %v", err)
+		log.Error().Err(err).Str("protocol", "tcp").Msg("Error resolving DNS message")
 		return
 	}
 
@@ -73,17 +73,18 @@ func processTCPConnection(conn net.Conn, res *resolver.Resolver) {
 func sendTCPResponse(conn net.Conn, resp dns.Msg) {
 	respBytes, err := resp.Pack()
 	if err != nil {
-		log.Printf("Error packing DNS response: %v", err)
+		log.Error().Err(err).Str("protocol", "tcp").Msg("Error packing DNS message")
 		return
 	}
 
 	lenBuf := []byte{byte(len(respBytes) >> 8), byte(len(respBytes))}
 	if _, err := conn.Write(lenBuf); err != nil {
-		log.Printf("Error sending length: %v", err)
+		log.Error().Err(err).Str("protocol", "tcp").Msg("Error sending length")
 		return
 	}
 
 	if _, err := conn.Write(respBytes); err != nil {
-		log.Printf("Error sending response: %v", err)
+		log.Error().Err(err).Str("protocol", "tcp").Msg("Error sending message")
+		return
 	}
 }

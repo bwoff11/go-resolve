@@ -44,11 +44,7 @@ func (us *UpstreamServer) Query(msg *dns.Msg) []dns.RR {
 	startTime := time.Now()
 	resp, _, err := us.Client.Exchange(msg, us.Address)
 	if err != nil {
-		log.Error().
-			Str("msg", "Failed to query upstream DNS server").
-			Str("address", us.Address).
-			Err(err).
-			Send()
+		log.Error().Str("msg", "Failed to query upstream DNS server").Str("address", us.Address).Err(err).Send()
 		return nil
 	}
 
