@@ -59,7 +59,7 @@ func (lr *LocalRecord) ToAnswer() []dns.RR {
 				Class:  dns.ClassINET,
 				Ttl:    uint32(lr.TTL),
 			},
-			Target: lr.Value,
+			Target: lr.Value + ".",
 		})
 	default:
 		log.Error().Str("type", lr.Type).Msg("Unsupported record type")
