@@ -20,18 +20,6 @@ type Cache struct {
 	CNAMERecords  []CNAMERecord
 }
 
-type DomainRecord struct {
-	Question  dns.Question
-	ExpiresAt time.Time
-	Records   []dns.RR
-}
-
-type CNAMERecord struct {
-	Question  dns.Question
-	ExpiresAt time.Time
-	Record    dns.CNAME
-}
-
 func New(cfg config.LocalConfig) *Cache {
 	c := &Cache{
 		DomainRecords: []DomainRecord{},
@@ -68,6 +56,7 @@ func (c *Cache) addCNAME(q dns.Question, r dns.RR) {
 		ExpiresAt: time.Now().Add(time.Duration(r.Header().Ttl) * time.Second),
 		Record:    *r.(*dns.CNAME),
 	})
+	log.Debug().Str("domain", q.Name).Str("target", r.(*dns.CNAME).Target).Msg("Added CNAME record to cache")
 }
 
 // addDomain adds a domain record to the cache.
@@ -77,4 +66,5 @@ func (c *Cache) addDomain(q dns.Question, r dns.RR) {
 		ExpiresAt: time.Now().Add(time.Duration(r.Header().Ttl) * time.Second),
 		Records:   []dns.RR{r},
 	})
+	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[r.Header().Rrtype]).Msg("Added domain record to cache")
 }
