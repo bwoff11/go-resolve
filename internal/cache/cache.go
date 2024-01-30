@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/bwoff11/go-resolve/internal/config"
+	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
 )
@@ -40,6 +41,7 @@ func (c *Cache) Add(q dns.Question, records []dns.RR) {
 		Expiry:   time.Now().Add(ttl),
 	})
 	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("Added record to cache")
+	metrics.CacheSize.Set(float64(len(c.Records)))
 }
 
 func (c *Cache) Query(q dns.Question) []dns.RR {
@@ -49,8 +51,13 @@ func (c *Cache) Query(q dns.Question) []dns.RR {
 	for _, record := range c.Records {
 		if record.Question.Name == q.Name && record.Question.Qtype == q.Qtype {
 			log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("Found record in cache")
+			metrics.CacheHits.Inc()
 			return record.Answer
 		}
 	}
+
+	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("Record not found in cache")
+	metrics.CacheMisses.Inc()
+
 	return []dns.RR{}
 }
