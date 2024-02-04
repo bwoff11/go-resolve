@@ -56,13 +56,36 @@ func (l *LocalRecords) Query(q *dns.Question) []dns.RR {
 	l.mutex.RLock()
 	defer l.mutex.RUnlock()
 
+	var finalAnswers []dns.RR
+
 	for _, r := range l.Records {
-		if r.Question.Name == q.Name && (r.Question.Qtype == q.Qtype || r.Question.Qtype == dns.TypeCNAME) {
+		if r.Question.Name == q.Name && r.Question.Qtype == q.Qtype {
 			log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("local record found")
-			return r.Answer
+			finalAnswers = append(finalAnswers, r.Answer...)
+		} else if r.Question.Name == q.Name && r.Question.Qtype == dns.TypeCNAME {
+			// Found a CNAME for the queried name. Need to do a recursive lookup for the CNAME target.
+			log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("CNAME record found, performing recursive lookup")
+			finalAnswers = append(finalAnswers, r.Answer...)
+			cnameRecord := r.Answer[0].(*dns.CNAME)
+			cnameQuestion := &dns.Question{Name: cnameRecord.Target, Qtype: q.Qtype, Qclass: q.Qclass}
+			additionalAnswers := l.recursiveLookup(cnameQuestion)
+			finalAnswers = append(finalAnswers, additionalAnswers...)
 		}
 	}
 
+	if len(finalAnswers) > 0 {
+		return finalAnswers
+	}
+
 	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("local record not found")
+	return nil
+}
+
+func (l *LocalRecords) recursiveLookup(q *dns.Question) []dns.RR {
+	for _, r := range l.Records {
+		if r.Question.Name == q.Name && (r.Question.Qtype == q.Qtype || r.Question.Qtype == dns.TypeCNAME) {
+			return r.Answer
+		}
+	}
 	return nil
 }
