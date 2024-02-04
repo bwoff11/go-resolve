@@ -1,8 +1,8 @@
 blockLists:
-  #- https://raw.githubusercontent.com/bwoff11/blocklists/main/ads.yml
-  #- https://raw.githubusercontent.com/bwoff11/blocklists/main/malware.yml
-  #- https://raw.githubusercontent.com/bwoff11/blocklists/main/other.yml
-  #- https://raw.githubusercontent.com/bwoff11/blocklists/main/tracking.yml
+  - https://raw.githubusercontent.com/bwoff11/blocklists/main/ads.yml
+  - https://raw.githubusercontent.com/bwoff11/blocklists/main/malware.yml
+  - https://raw.githubusercontent.com/bwoff11/blocklists/main/other.yml
+  - https://raw.githubusercontent.com/bwoff11/blocklists/main/tracking.yml
 
 cache:
   enabled: true
