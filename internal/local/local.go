@@ -57,7 +57,7 @@ func (l *LocalRecords) Query(q *dns.Question) []dns.RR {
 	defer l.mutex.RUnlock()
 
 	for _, r := range l.Records {
-		if r.Question.Name == q.Name && r.Question.Qtype == q.Qtype {
+		if r.Question.Name == q.Name && (r.Question.Qtype == q.Qtype || r.Question.Qtype == dns.TypeCNAME) {
 			log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("local record found")
 			return r.Answer
 		}

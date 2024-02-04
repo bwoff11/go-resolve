@@ -9,12 +9,12 @@ fi
 DNS_PORT=$1
 
 # List of sample domains to query
-DOMAINS=("aiseet.aa.atianqi.com" "google.com" "example.com" )
+DOMAINS=("aiseet.aa.atianqi.com" "google.com" "example.com" "www.example.com" )
 
 # Infinite loop to continuously send DNS queries
 while true; do
     for domain in "${DOMAINS[@]}"; do
         dig @localhost -p 1053 $domain
-        sleep 0.1
+        sleep 1
     done
 done
