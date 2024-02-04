@@ -10,6 +10,7 @@ import (
 type Config struct {
 	BlockLists []string  `yaml:"blockLists"`
 	Cache      Cache     `yaml:"cache"`
+	Local      Local     `yaml:"local"`
 	Metrics    Metrics   `yaml:"metrics"`
 	Protocols  Protocols `yaml:"protocols"`
 	Upstream   Upstream  `yaml:"upstream"`

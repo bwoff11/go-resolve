@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (c *Cache) StartHousekeeper(interval time.Duration) {
+func (c *Cache) startHousekeeper(interval time.Duration) {
 	go func() {
 		ticker := time.NewTicker(interval)
 		for {

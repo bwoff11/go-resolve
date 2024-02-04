@@ -7,6 +7,7 @@ import (
 	"github.com/bwoff11/go-resolve/internal/blocklist"
 	"github.com/bwoff11/go-resolve/internal/cache"
 	"github.com/bwoff11/go-resolve/internal/config"
+	"github.com/bwoff11/go-resolve/internal/local"
 	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/bwoff11/go-resolve/internal/upstream"
 	"github.com/miekg/dns"
@@ -14,16 +15,17 @@ import (
 )
 
 type Resolver struct {
-	Upstream  *upstream.Upstream
-	Strategy  config.Strategy
-	Cache     *cache.Cache
 	BlockList *blocklist.BlockList
+	Cache     *cache.Cache
+	Local     *local.LocalRecords
+	Upstream  *upstream.Upstream
 }
 
 // New creates a new Resolver instance.
 func New(cfg *config.Config) *Resolver {
 	return &Resolver{
 		Upstream:  upstream.New(cfg.Upstream),
+		Local:     local.New(cfg.Local),
 		Cache:     cache.New(cfg.Cache),
 		BlockList: blocklist.New(cfg.BlockLists),
 	}
@@ -40,6 +42,11 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 	// Check block list
 	if block := r.BlockList.Query(qName); block != nil {
 		return r.blockedResponse(req, startTime), nil
+	}
+
+	// Check local records
+	if records := r.Local.Query(q); len(records) > 0 {
+		return r.createResponse(req, records, true, startTime), nil
 	}
 
 	// Check cache

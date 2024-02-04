@@ -26,7 +26,7 @@ func New(cfg config.Cache) *Cache {
 	log.Debug().Msg("Initializing cache")
 
 	purgeInterval := 1 * time.Second
-	c.StartHousekeeper(purgeInterval)
+	c.startHousekeeper(purgeInterval)
 	return c
 }
 
