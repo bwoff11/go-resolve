@@ -16,7 +16,7 @@ type Cache struct {
 }
 
 type Record struct {
-	Question dns.Question
+	Question *dns.Question
 	Answer   []dns.RR
 	Expiry   time.Time
 }
@@ -30,7 +30,7 @@ func New(cfg config.Cache) *Cache {
 	return c
 }
 
-func (c *Cache) Add(q dns.Question, records []dns.RR) {
+func (c *Cache) Add(q *dns.Question, records []dns.RR) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -45,7 +45,7 @@ func (c *Cache) Add(q dns.Question, records []dns.RR) {
 	metrics.CacheSize.Set(float64(len(c.Records)))
 }
 
-func (c *Cache) Query(q dns.Question) []dns.RR {
+func (c *Cache) Query(q *dns.Question) []dns.RR {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 

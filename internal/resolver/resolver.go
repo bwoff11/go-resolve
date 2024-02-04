@@ -25,7 +25,7 @@ type Resolver struct {
 func New(cfg *config.Config) *Resolver {
 	return &Resolver{
 		Upstream:  upstream.New(cfg.Upstream),
-		Local:     local.New(cfg.Local),
+		Local:     local.New(&cfg.Local),
 		Cache:     cache.New(cfg.Cache),
 		BlockList: blocklist.New(cfg.BlockLists),
 	}
@@ -36,7 +36,7 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 	log.Debug().Str("domain", req.Question[0].Name).Msg("Resolving domain")
 	startTime := time.Now()
 
-	q := req.Question[0] // Only support one question
+	q := &req.Question[0] // Only support one question
 	qName := req.Question[0].Name
 
 	// Check block list
