@@ -26,7 +26,7 @@ func NewUpstreamServer(host string, port int, timeout int) *UpstreamServer {
 	ip := net.ParseIP(host)
 	if ip == nil {
 		log.Fatal().
-			Str("msg", "Failed to parse IP address").
+			Str("msg", "failed to parse IP address").
 			Str("host", host).
 			Send()
 	}

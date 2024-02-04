@@ -43,10 +43,7 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("error unmarshaling config: %w", err)
 	}
 
-	log.Debug().
-		Str("msg", "Loaded config").
-		Str("config", fmt.Sprintf("%+v", cfg)).
-		Send()
+	log.Debug().Str("config", fmt.Sprintf("%+v", cfg)).Msg("loaded configuration")
 
 	return &cfg, nil
 }

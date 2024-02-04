@@ -22,11 +22,11 @@ func CreateUDPListener(config *config.Config, resolver *resolver.Resolver) {
 	addr := net.JoinHostPort("", strconv.Itoa(config.Protocols.UDP.Port))
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Error creating UDP listener")
+		log.Fatal().Err(err).Msg("error creating udp listener")
 	}
 	defer conn.Close()
 
-	log.Debug().Str("protocol", "udp").Str("address", addr).Msg("Listening")
+	log.Debug().Str("protocol", "udp").Str("address", addr).Msg("listening")
 	handleUDPConnections(conn, resolver)
 }
 
@@ -37,7 +37,7 @@ func handleUDPConnections(conn net.PacketConn, res *resolver.Resolver) {
 	for {
 		n, clientAddr, err := conn.ReadFrom(buf)
 		if err != nil {
-			log.Error().Err(err).Str("protocol", "udp").Msg("Error reading UDP packet")
+			log.Error().Err(err).Str("protocol", "udp").Msg("error reading udp packet")
 			continue
 		}
 
@@ -50,24 +50,24 @@ func processUDPQuery(query []byte, conn net.PacketConn, addr net.Addr, res *reso
 	startTime := time.Now()
 	var req dns.Msg
 	if err := req.Unpack(query); err != nil {
-		log.Error().Err(err).Str("protocol", "udp").Msg("Error unpacking DNS query")
+		log.Error().Err(err).Str("protocol", "udp").Msg("error unpacking dns query")
 		return
 	}
 
 	resp, err := res.Resolve(&req)
 	if err != nil {
-		log.Error().Err(err).Str("protocol", "udp").Msg("Error resolving DNS query")
+		log.Error().Err(err).Str("protocol", "udp").Msg("error resolving dns query")
 		return
 	}
 
 	respBytes, err := resp.Pack()
 	if err != nil {
-		log.Error().Err(err).Str("protocol", "udp").Msg("Error packing DNS response")
+		log.Error().Err(err).Str("protocol", "udp").Msg("error packing dns response")
 		return
 	}
 
 	if _, err := conn.WriteTo(respBytes, addr); err != nil {
-		log.Error().Err(err).Str("protocol", "udp").Msg("Error sending DNS response")
+		log.Error().Err(err).Str("protocol", "udp").Msg("error sending dns response")
 		return
 	}
 

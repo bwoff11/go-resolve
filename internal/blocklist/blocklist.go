@@ -33,7 +33,7 @@ func New(blockListURLs []string) *BlockList {
 	}
 
 	wg.Wait()
-	log.Info().Int("count", len(combinedBlockList)).Msg("Block list compiled")
+	log.Info().Int("count", len(combinedBlockList)).Msg("block list compiled")
 	return &combinedBlockList
 }
 
@@ -44,13 +44,13 @@ func addBlocklist(url string, combinedBlockList *BlockList, mutex *sync.Mutex, w
 
 	rawYAML, err := downloadBlockList(url)
 	if err != nil {
-		log.Error().Err(err).Str("url", url).Msg("Failed to download block list")
+		log.Error().Err(err).Str("url", url).Msg("failed to download block list")
 		return
 	}
 
 	blockList, err := parseBlockList(rawYAML)
 	if err != nil {
-		log.Error().Err(err).Str("url", url).Msg("Failed to parse block list")
+		log.Error().Err(err).Str("url", url).Msg("failed to parse block list")
 		return
 	}
 
@@ -58,7 +58,7 @@ func addBlocklist(url string, combinedBlockList *BlockList, mutex *sync.Mutex, w
 	*combinedBlockList = append(*combinedBlockList, *blockList...)
 	mutex.Unlock()
 
-	log.Info().Str("url", url).Msg("Block list downloaded and parsed")
+	log.Info().Str("url", url).Msg("block list downloaded and parsed")
 }
 
 // downloadBlockList downloads a block list from a given URL and returns its content as a byte slice.

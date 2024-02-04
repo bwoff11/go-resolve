@@ -33,7 +33,7 @@ func New(cfg *config.Config) *Resolver {
 
 // Resolve processes the DNS query and returns a response.
 func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
-	log.Debug().Str("domain", req.Question[0].Name).Msg("Resolving domain")
+	log.Debug().Str("domain", req.Question[0].Name).Msg("resolving domain")
 	startTime := time.Now()
 
 	q := &req.Question[0] // Only support one question
@@ -60,7 +60,7 @@ func (r *Resolver) Resolve(req *dns.Msg) (*dns.Msg, error) {
 		return r.createResponse(req, records, false, startTime), nil
 	}
 
-	log.Info().Str("domain", qName).Msg("Domain not found in cache or upstream")
+	log.Info().Str("domain", qName).Msg("domain not found in local, cache, or upstream")
 	return r.createResponse(req, []dns.RR{}, false, startTime), nil // Need to verify this is correct for NXDOMAIN
 }
 
@@ -87,7 +87,7 @@ func (r *Resolver) createResponse(req *dns.Msg, answer []dns.RR, authoritative b
 		Str("domain", req.Question[0].Name).
 		Str("type", dns.TypeToString[req.Question[0].Qtype]).
 		//Str("answer", answer[0].String()). //possibly nil
-		Msg("Created response")
+		Msg("created response")
 	metrics.ResolutionDuration.Observe(time.Since(startTime).Seconds())
 	return msg
 }

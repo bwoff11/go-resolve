@@ -23,7 +23,7 @@ type Record struct {
 
 func New(cfg config.Cache) *Cache {
 	c := &Cache{}
-	log.Debug().Msg("Initializing cache")
+	log.Debug().Msg("initializing cache")
 
 	purgeInterval := 1 * time.Second
 	c.startHousekeeper(purgeInterval)
@@ -41,7 +41,7 @@ func (c *Cache) Add(q *dns.Question, records []dns.RR) {
 		Answer:   records,
 		Expiry:   time.Now().Add(ttl),
 	})
-	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("Added record to cache")
+	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("added record to cache")
 	metrics.CacheSize.Set(float64(len(c.Records)))
 }
 
@@ -51,13 +51,13 @@ func (c *Cache) Query(q *dns.Question) []dns.RR {
 
 	for _, record := range c.Records {
 		if record.Question.Name == q.Name && record.Question.Qtype == q.Qtype {
-			log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("Found record in cache")
+			log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("found record in cache")
 			metrics.CacheHits.Inc()
 			return record.Answer
 		}
 	}
 
-	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("Record not found in cache")
+	log.Debug().Str("domain", q.Name).Str("type", dns.TypeToString[q.Qtype]).Msg("record not found in cache")
 	metrics.CacheMisses.Inc()
 
 	return []dns.RR{}
