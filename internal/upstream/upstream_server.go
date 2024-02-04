@@ -15,6 +15,8 @@ type UpstreamServer struct {
 	IP      net.IP
 	Address string // IP:Port
 	Timeout int
+
+	Latency time.Duration
 }
 
 // New creates a new Upstream object with the specified IP address.
@@ -38,8 +40,9 @@ func NewUpstreamServer(host string, port int, timeout int) *UpstreamServer {
 }
 
 // Query sends the given DNS query message to the upstream DNS server and returns the response.
-func (us *UpstreamServer) Query(msg *dns.Msg) []dns.RR {
+func (us *UpstreamServer) Query(msg *dns.Msg) (response []dns.RR) {
 	startTime := time.Now()
+	defer func() { metrics.UpstreamDuration.Observe(time.Since(startTime).Seconds()) }()
 
 	client := &dns.Client{
 		Net:     "udp",
@@ -48,18 +51,22 @@ func (us *UpstreamServer) Query(msg *dns.Msg) []dns.RR {
 
 	resp, rtt, err := client.Exchange(msg, us.Address)
 	metrics.UpstreamRTT.WithLabelValues(us.Address).Observe(rtt.Seconds())
+	us.Latency = rtt
+
 	if err != nil {
 		log.Error().Str("msg", "Failed to query upstream DNS server").Str("address", us.Address).Err(err).Send()
 		return nil
 	}
-	if resp != nil {
-		if resp.Rcode == dns.RcodeSuccess {
-			log.Debug().Str("msg", "Upstream DNS server responded").Str("address", us.Address).Send()
-		} else {
-			log.Debug().Str("msg", "Upstream DNS server responded with error").Str("address", us.Address).Int("rcode", resp.Rcode).Send()
-		}
+
+	if resp == nil {
+		return nil
 	}
 
-	metrics.UpstreamDuration.Observe(time.Since(startTime).Seconds())
+	if resp.Rcode != dns.RcodeSuccess {
+		log.Debug().Str("msg", "Upstream DNS server responded with error").Str("address", us.Address).Int("rcode", resp.Rcode).Send()
+		return nil
+	}
+
+	log.Debug().Str("msg", "Upstream DNS server responded").Str("address", us.Address).Send()
 	return resp.Answer
 }
