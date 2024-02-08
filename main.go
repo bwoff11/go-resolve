@@ -5,8 +5,7 @@ import (
 	"strconv"
 
 	"github.com/bwoff11/go-resolve/internal/config"
-	"github.com/bwoff11/go-resolve/internal/listener"
-	"github.com/bwoff11/go-resolve/internal/resolver"
+	"github.com/bwoff11/go-resolve/internal/transport"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
@@ -18,25 +17,20 @@ func main() {
 	}
 
 	startMetricsServer(cfg.Metrics)
-	startListeners(cfg)
+	startTransports(cfg.Transport)
 
 	select {}
 }
 
-func startListeners(config *config.Config) {
-
-	// Create shared resolver
-	resolver := resolver.New(config)
-
-	if config.Protocols.UDP.Enabled {
-		go listener.CreateUDPListener(config, resolver)
+func startTransports(cfg config.Transport) {
+	ts, err := transport.New(&cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to start transports")
 	}
-	if config.Protocols.TCP.Enabled {
-		go listener.CreateTCPListener(config, resolver)
+
+	if err := ts.Listen(); err != nil {
+		log.Fatal().Err(err).Msg("Failed to start transports")
 	}
-	//if cfg.DNS.Protocols.DOT.Enabled {
-	//	go listener.CreateDOTListener(cfg.DNS.Protocols.DOT)
-	//}
 }
 
 func startMetricsServer(cfg config.Metrics) {

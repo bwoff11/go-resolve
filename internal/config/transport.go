@@ -1,9 +1,10 @@
 package config
 
-type Protocols struct {
+type Transport struct {
 	UDP Protocol    `yaml:"udp"`
 	TCP Protocol    `yaml:"tcp"`
-	Dot DOTProtocol `yaml:"dot"`
+	DOT DOTProtocol `yaml:"dot"`
+	DOH DOHProtocol `yaml:"doh"`
 }
 
 type Protocol struct {
@@ -12,9 +13,15 @@ type Protocol struct {
 }
 
 type DOTProtocol struct {
-	Enabled     bool   `yaml:"enabled"`
-	Port        int    `yaml:"port"`
+	Protocol    `yaml:",inline"`
 	TLSCertFile string `yaml:"tlsCertFile"`
 	TLSKeyFile  string `yaml:"tlsKeyFile"`
 	StrictSNI   bool   `yaml:"strictSNI"`
+}
+
+type DOHProtocol struct {
+	Protocol    `yaml:",inline"`
+	TLSCertFile string `yaml:"tlsCertFile"`
+	TLSKeyFile  string `yaml:"tlsKeyFile"`
+	Endpoint    string `yaml:"endpoint"`
 }

@@ -12,7 +12,7 @@ type Config struct {
 	Cache      Cache     `yaml:"cache"`
 	Local      Local     `yaml:"local"`
 	Metrics    Metrics   `yaml:"metrics"`
-	Protocols  Protocols `yaml:"protocols"`
+	Transport  Transport `yaml:"transport"`
 	Upstream   Upstream  `yaml:"upstream"`
 }
 

@@ -32,7 +32,7 @@ metrics:
   route: "/metrics"
   port: 9091
 
-protocols:
+transport:
   udp:
     enabled: true
     port: 1053
