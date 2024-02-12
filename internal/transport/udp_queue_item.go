@@ -12,8 +12,16 @@ type UDPQueueItem struct {
 	Conn net.PacketConn
 }
 
-func (u *UDPQueueItem) Question() dns.Question {
-	return u.Msg.Question[0]
+func (u *UDPQueueItem) Message() *dns.Msg {
+	return &u.Msg
+}
+
+func (u *UDPQueueItem) Question() *dns.Question {
+	return &u.Msg.Question[0]
+}
+
+func (u *UDPQueueItem) Protocol() string {
+	return "udp"
 }
 
 // Respond serializes the dns.Msg and sends it to the client.

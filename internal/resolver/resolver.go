@@ -9,26 +9,46 @@ import (
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/local"
 	"github.com/bwoff11/go-resolve/internal/metrics"
+	"github.com/bwoff11/go-resolve/internal/transport"
 	"github.com/bwoff11/go-resolve/internal/upstream"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
 )
 
 type Resolver struct {
-	BlockList *blocklist.BlockList
-	Cache     *cache.Cache
-	Local     *local.LocalRecords
-	Upstream  *upstream.Upstream
+	BlockList     *blocklist.BlockList
+	Cache         *cache.Cache
+	Local         *local.LocalRecords
+	Upstream      *upstream.Upstream
+	InboundQueue  chan transport.QueueItem
+	OutboundQueue chan transport.QueueItem
 }
 
 // New creates a new Resolver instance.
-func New(cfg *config.Config) *Resolver {
+func New(cfg *config.Config, t *transport.Transports) *Resolver {
 	return &Resolver{
-		Upstream:  upstream.New(cfg.Upstream),
-		Local:     local.New(&cfg.Local),
-		Cache:     cache.New(cfg.Cache),
-		BlockList: blocklist.New(cfg.BlockLists),
+		Upstream:      upstream.New(cfg.Upstream),
+		Local:         local.New(&cfg.Local),
+		Cache:         cache.New(cfg.Cache),
+		BlockList:     blocklist.New(cfg.BlockLists),
+		InboundQueue:  t.InboundQueue,
+		OutboundQueue: t.OutboundQueue,
 	}
+}
+
+func (r *Resolver) Start() {
+	go func() {
+		for item := range r.InboundQueue {
+			req := item.Message()
+			resp, err := r.Resolve(req)
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to resolve query")
+				continue
+			}
+			item.Respond(resp)
+		}
+	}()
+	log.Info().Msg("Resolver started and listening on the inbound queue")
 }
 
 // Resolve processes the DNS query and returns a response.
