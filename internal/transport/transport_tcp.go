@@ -48,45 +48,46 @@ func (t *TCPTransport) Listen() error {
 func (tt *TCPTransport) handleTCPConnection(conn net.Conn) {
 	defer conn.Close()
 
-	lenBuf := make([]byte, 2)
 	for {
-		// Read the length of the DNS message
-		_, err := io.ReadFull(conn, lenBuf)
+		req, err := tt.readDNSMessage(conn)
 		if err != nil {
-			log.Error().Err(err).Msg("error reading length from TCP connection")
-			return
-		}
-		length := binary.BigEndian.Uint16(lenBuf)
-
-		// Read the DNS message based on the length
-		msgBuf := make([]byte, length)
-		_, err = io.ReadFull(conn, msgBuf)
-		if err != nil {
-			log.Error().Err(err).Msg("error reading message from TCP connection")
+			log.Error().Err(err).Msg("error handling TCP connection")
 			return
 		}
 
-		// Unpack the DNS message
-		var req dns.Msg
-		if err := req.Unpack(msgBuf); err != nil {
-			log.Error().Err(err).Msg("error unpacking DNS message")
-			return
-		}
-
-		// Create a TCPConnection adapter
-		tcpConn := &TCPConnection{Conn: conn}
-
-		// Queue the item with the generic QueueItem structure
-		tt.Transports.Queue <- QueueItem{
-			Msg:        req,
-			Connection: tcpConn,
-		}
+		tt.queueDNSRequest(req, conn)
 	}
 }
 
-// Implement processing for OutboundQueue, sending responses back to the client.
-// This functionality would require a mapping or association of responses to client connections,
-// potentially via a modified QueueItem struct to include a connection reference for TCP responses.
+func (tt *TCPTransport) readDNSMessage(conn net.Conn) (*dns.Msg, error) {
+	lenBuf := make([]byte, 2)
+	_, err := io.ReadFull(conn, lenBuf)
+	if err != nil {
+		return nil, err
+	}
+
+	length := binary.BigEndian.Uint16(lenBuf)
+	msgBuf := make([]byte, length)
+	_, err = io.ReadFull(conn, msgBuf)
+	if err != nil {
+		return nil, err
+	}
+
+	var req dns.Msg
+	if err := req.Unpack(msgBuf); err != nil {
+		return nil, err
+	}
+
+	return &req, nil
+}
+
+func (tt *TCPTransport) queueDNSRequest(req *dns.Msg, conn net.Conn) {
+	tcpConn := &TCPConnection{Conn: conn}
+	tt.Transports.Queue <- QueueItem{
+		Msg:        *req,
+		Connection: tcpConn,
+	}
+}
 
 func (t *TCPTransport) Close() error {
 	return t.Listener.Close()
