@@ -21,6 +21,7 @@ func main() {
 	startMetricsServer(&cfg.Metrics)
 
 	transports := transport.New(&cfg.Transport)
+	transports.Start()
 	resolver := resolver.New(cfg, transports.Queue)
 	resolver.Start()
 

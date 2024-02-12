@@ -1,20 +1,14 @@
 package transport
 
 import (
+	"github.com/bwoff11/go-resolve/internal/common"
 	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/rs/zerolog/log"
 )
 
-type Protocol string
-
 const (
 	queueBufferSize = 256 // For inbound/outbound queues
 	UDPBufferSize   = 512 // For UDP packet size
-
-	ProtocolTCP Protocol = "tcp"
-	ProtocolUDP Protocol = "udp"
-	ProtocolDOT Protocol = "dot"
-	ProtocolDOH Protocol = "doh"
 )
 
 type Transport interface {
@@ -24,14 +18,14 @@ type Transport interface {
 
 // Transports now uses a map for dynamic transport management.
 type Transports struct {
-	Transports map[Protocol]Transport
+	Transports map[common.Protocol]Transport
 	Queue      chan QueueItem
 }
 
 // Initializes Transports with enabled transports from configuration.
 func New(cfg *config.Transport) *Transports {
 	ts := &Transports{
-		Transports: make(map[Protocol]Transport),
+		Transports: make(map[common.Protocol]Transport),
 		Queue:      make(chan QueueItem, queueBufferSize),
 	}
 
@@ -40,8 +34,8 @@ func New(cfg *config.Transport) *Transports {
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to initialize TCP transport")
 		}
-		ts.Transports[ProtocolTCP] = tcp
-		log.Info().Str("protocol", string(ProtocolTCP)).Msg("transport enabled")
+		ts.Transports[common.ProtocolTCP] = tcp
+		log.Info().Str("common.Protocol", string(common.ProtocolTCP)).Msg("transport enabled")
 	}
 
 	if cfg.UDP.Enabled {
@@ -49,11 +43,15 @@ func New(cfg *config.Transport) *Transports {
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to initialize UDP transport")
 		}
-		ts.Transports[ProtocolUDP] = udp
-		log.Info().Str("protocol", string(ProtocolUDP)).Msg("transport enabled")
+		ts.Transports[common.ProtocolUDP] = udp
+		log.Info().Str("common.Protocol", string(common.ProtocolUDP)).Msg("transport enabled")
 	}
 
 	return ts
+}
+
+func (t *Transports) Start() {
+	t.Listen()
 }
 
 // Listen on all initialized transports.
