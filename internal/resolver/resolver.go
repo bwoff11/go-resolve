@@ -16,29 +16,27 @@ import (
 )
 
 type Resolver struct {
-	BlockList     *blocklist.BlockList
-	Cache         *cache.Cache
-	Local         *local.LocalRecords
-	Upstream      *upstream.Upstream
-	InboundQueue  chan transport.QueueItem
-	OutboundQueue chan transport.QueueItem
+	BlockList *blocklist.BlockList
+	Cache     *cache.Cache
+	Local     *local.LocalRecords
+	Upstream  *upstream.Upstream
+	Queue     chan transport.QueueItem
 }
 
 // New creates a new Resolver instance.
-func New(cfg *config.Config, t *transport.Transports) *Resolver {
+func New(cfg *config.Config, q chan transport.QueueItem) *Resolver {
 	return &Resolver{
-		Upstream:      upstream.New(cfg.Upstream),
-		Local:         local.New(&cfg.Local),
-		Cache:         cache.New(cfg.Cache),
-		BlockList:     blocklist.New(cfg.BlockLists),
-		InboundQueue:  t.InboundQueue,
-		OutboundQueue: t.OutboundQueue,
+		Upstream:  upstream.New(cfg.Upstream),
+		Local:     local.New(&cfg.Local),
+		Cache:     cache.New(cfg.Cache),
+		BlockList: blocklist.New(cfg.BlockLists),
+		Queue:     q,
 	}
 }
 
 func (r *Resolver) Start() {
 	go func() {
-		for item := range r.InboundQueue {
+		for item := range r.Queue {
 			req := item.Message()
 			resp, err := r.Resolve(req)
 			if err != nil {

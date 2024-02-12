@@ -57,7 +57,7 @@ func (ut *UDPTransport) handleUDPQuery(query []byte, clientAddr net.Addr) {
 		return
 	}
 
-	ut.Transports.InboundQueue <- &UDPQueueItem{
+	ut.Transports.Queue <- &UDPQueueItem{
 		Msg:  req,
 		Addr: clientAddr,
 		Conn: ut.Conn,

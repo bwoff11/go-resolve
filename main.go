@@ -12,37 +12,22 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to load configuration")
-	}
 
-	startMetricsServer(cfg.Metrics)
-	t := startTransports(cfg.Transport)
-	startRevolver(cfg, t)
+	// No error handling on these functions because
+	// if they fail, the program should exit.
 
-	select {}
+	cfg, _ := config.Load()
+
+	startMetricsServer(&cfg.Metrics)
+
+	transports := transport.New(&cfg.Transport)
+	resolver := resolver.New(cfg, transports.Queue)
+	resolver.Start()
+
+	select {} // replace with a signal handler
 }
 
-func startRevolver(cfg *config.Config, t *transport.Transports) {
-	r := resolver.New(cfg, t)
-	r.Start()
-}
-
-func startTransports(cfg config.Transport) *transport.Transports {
-	ts, err := transport.New(&cfg)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to start transports")
-	}
-
-	if err := ts.Listen(); err != nil {
-		log.Fatal().Err(err).Msg("Failed to start transports")
-	}
-
-	return ts
-}
-
-func startMetricsServer(cfg config.Metrics) {
+func startMetricsServer(cfg *config.Metrics) {
 	http.Handle(cfg.Route, promhttp.Handler())
 	go func() {
 		log.Info().Str("address", ":"+strconv.Itoa(cfg.Port)).Msg("Starting Prometheus metrics server")

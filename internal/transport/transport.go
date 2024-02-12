@@ -24,43 +24,41 @@ type Transport interface {
 
 // Transports now uses a map for dynamic transport management.
 type Transports struct {
-	transports    map[Protocol]Transport
-	InboundQueue  chan QueueItem
-	OutboundQueue chan QueueItem
+	Transports map[Protocol]Transport
+	Queue      chan QueueItem
 }
 
 // Initializes Transports with enabled transports from configuration.
-func New(cfg *config.Transport) (*Transports, error) {
+func New(cfg *config.Transport) *Transports {
 	ts := &Transports{
-		transports:    make(map[Protocol]Transport),
-		InboundQueue:  make(chan QueueItem, queueBufferSize),
-		OutboundQueue: make(chan QueueItem, queueBufferSize),
+		Transports: make(map[Protocol]Transport),
+		Queue:      make(chan QueueItem, queueBufferSize),
 	}
 
 	if cfg.TCP.Enabled {
 		tcp, err := NewTCP(cfg.TCP, ts)
 		if err != nil {
-			return nil, err
+			log.Fatal().Err(err).Msg("failed to initialize TCP transport")
 		}
-		ts.transports[ProtocolTCP] = tcp
+		ts.Transports[ProtocolTCP] = tcp
 		log.Info().Str("protocol", string(ProtocolTCP)).Msg("transport enabled")
 	}
 
 	if cfg.UDP.Enabled {
 		udp, err := NewUDP(cfg.UDP, ts)
 		if err != nil {
-			return nil, err
+			log.Fatal().Err(err).Msg("failed to initialize UDP transport")
 		}
-		ts.transports[ProtocolUDP] = udp
+		ts.Transports[ProtocolUDP] = udp
 		log.Info().Str("protocol", string(ProtocolUDP)).Msg("transport enabled")
 	}
 
-	return ts, nil
+	return ts
 }
 
 // Listen on all initialized transports.
 func (t *Transports) Listen() error {
-	for _, transport := range t.transports {
+	for _, transport := range t.Transports {
 		go func(transport Transport) {
 			if err := transport.Listen(); err != nil {
 				log.Error().Err(err).Msg("transport error")
@@ -72,7 +70,7 @@ func (t *Transports) Listen() error {
 
 // Stop all initialized transports.
 func (t *Transports) Stop() error {
-	for name, transport := range t.transports {
+	for name, transport := range t.Transports {
 		if err := transport.Close(); err != nil {
 			return err
 		}

@@ -70,7 +70,7 @@ func (tt *TCPTransport) handleTCPConnection(conn net.Conn) {
 			return
 		}
 
-		tt.Transports.InboundQueue <- &TCPQueueItem{
+		tt.Transports.Queue <- &TCPQueueItem{
 			Msg:  req,
 			Conn: conn,
 		}
