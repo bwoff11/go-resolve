@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bwoff11/go-resolve/internal/config"
 	"github.com/bwoff11/go-resolve/internal/metrics"
 	"github.com/miekg/dns"
 	"github.com/rs/zerolog/log"
@@ -21,7 +20,7 @@ type Record struct {
 	Expiry   time.Time
 }
 
-func New(cfg config.Cache) *Cache {
+func New() *Cache {
 	c := &Cache{}
 	log.Debug().Msg("initializing cache")
 

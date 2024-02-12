@@ -49,7 +49,6 @@ func (ut *UDPTransport) Listen() error {
 	return nil
 }
 
-// handleUDPQuery processes a single UDP packet.
 func (ut *UDPTransport) handleUDPQuery(query []byte, clientAddr net.Addr) {
 	var req dns.Msg
 	if err := req.Unpack(query); err != nil {
@@ -57,10 +56,16 @@ func (ut *UDPTransport) handleUDPQuery(query []byte, clientAddr net.Addr) {
 		return
 	}
 
-	ut.Transports.Queue <- &UDPQueueItem{
-		Msg:  req,
+	// Create a UDPConnection adapter
+	udpConn := &UDPConnection{
 		Addr: clientAddr,
 		Conn: ut.Conn,
+	}
+
+	// Enqueue the query with the generic QueueItem structure
+	ut.Transports.Queue <- QueueItem{
+		Msg:        req,
+		Connection: udpConn,
 	}
 }
 

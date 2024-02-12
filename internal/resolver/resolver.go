@@ -28,7 +28,7 @@ func New(cfg *config.Config, q chan transport.QueueItem) *Resolver {
 	return &Resolver{
 		Upstream:  upstream.New(cfg.Upstream),
 		Local:     local.New(&cfg.Local),
-		Cache:     cache.New(cfg.Cache),
+		Cache:     cache.New(),
 		BlockList: blocklist.New(cfg.BlockLists),
 		Queue:     q,
 	}

@@ -1,10 +1,22 @@
 package transport
 
-import "github.com/miekg/dns"
+import (
+	"github.com/miekg/dns"
+)
 
-type QueueItem interface {
-	Message() *dns.Msg
-	Question() *dns.Question
-	Protocol() string
-	Respond(*dns.Msg) error
+type QueueItem struct {
+	Msg        dns.Msg
+	Connection Connection
+}
+
+func (qi *QueueItem) Message() *dns.Msg {
+	return &qi.Msg
+}
+
+func (qi *QueueItem) Question() *dns.Question {
+	return &qi.Msg.Question[0]
+}
+
+func (qi *QueueItem) Respond(msg *dns.Msg) error {
+	return qi.Connection.SendResponse(msg)
 }

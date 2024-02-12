@@ -4,10 +4,6 @@ blockLists:
   - https://raw.githubusercontent.com/bwoff11/blocklists/main/other.yml
   - https://raw.githubusercontent.com/bwoff11/blocklists/main/tracking.yml
 
-cache:
-  enabled: true
-  pruneInterval: 60
-
 local:
   standard:
     - domain: "example.com"
