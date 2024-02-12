@@ -12,19 +12,18 @@ import (
 )
 
 type TCPTransport struct {
-	Transports *Transports
-	Listener   net.Listener
+	Listener net.Listener
+	Queue    chan QueueItem
 }
 
-func NewTCP(c config.Protocol, ts *Transports) (*TCPTransport, error) {
+func NewTCP(c config.Protocol, q chan QueueItem) (*TCPTransport, error) {
 	addr := net.JoinHostPort("", strconv.Itoa(c.Port))
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
 	return &TCPTransport{
-		Transports: ts,
-		Listener:   listener,
+		Listener: listener,
 	}, nil
 }
 
@@ -83,7 +82,7 @@ func (tt *TCPTransport) readDNSMessage(conn net.Conn) (*dns.Msg, error) {
 
 func (tt *TCPTransport) queueDNSRequest(req *dns.Msg, conn net.Conn) {
 	tcpConn := &TCPConnection{Conn: conn}
-	tt.Transports.Queue <- QueueItem{
+	tt.Queue <- QueueItem{
 		Msg:        *req,
 		Connection: tcpConn,
 	}

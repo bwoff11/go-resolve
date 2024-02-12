@@ -30,7 +30,7 @@ func New(cfg *config.Transport) *Transports {
 	}
 
 	if cfg.TCP.Enabled {
-		tcp, err := NewTCP(cfg.TCP, ts)
+		tcp, err := NewTCP(cfg.TCP, ts.Queue)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to initialize TCP transport")
 		}
@@ -39,7 +39,7 @@ func New(cfg *config.Transport) *Transports {
 	}
 
 	if cfg.UDP.Enabled {
-		udp, err := NewUDP(cfg.UDP, ts)
+		udp, err := NewUDP(cfg.UDP, ts.Queue)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to initialize UDP transport")
 		}

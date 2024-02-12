@@ -10,19 +10,19 @@ import (
 )
 
 type UDPTransport struct {
-	Transports *Transports
-	Conn       net.PacketConn
+	Conn  net.PacketConn
+	Queue chan QueueItem
 }
 
-func NewUDP(c config.Protocol, ts *Transports) (Transport, error) {
+func NewUDP(c config.Protocol, q chan QueueItem) (Transport, error) {
 	addr := net.JoinHostPort("", strconv.Itoa(c.Port))
 	conn, err := net.ListenPacket("udp", addr)
 	if err != nil {
 		return nil, err
 	}
 	return &UDPTransport{
-		Transports: ts,
-		Conn:       conn,
+		Conn:  conn,
+		Queue: q,
 	}, nil
 }
 
@@ -63,7 +63,7 @@ func (ut *UDPTransport) handleUDPQuery(query []byte, clientAddr net.Addr) {
 	}
 
 	// Enqueue the query with the generic QueueItem structure
-	ut.Transports.Queue <- QueueItem{
+	ut.Queue <- QueueItem{
 		Msg:        req,
 		Connection: udpConn,
 	}
